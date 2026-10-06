@@ -143,10 +143,12 @@ function SetupPage() {
                 <div className="space-y-2">
                   <Label htmlFor="origin">Moving from</Label>
                   <Input id="origin" required value={origin} onChange={(e) => { setOrigin(e.target.value); setMoveId(null); }} placeholder="e.g. India" className="h-12 rounded-xl bg-card" />
+                  {fieldErr.origin && <p className="text-sm text-destructive">{fieldErr.origin}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="destination">Moving to</Label>
                   <Input id="destination" required value={destination} onChange={(e) => { setDestination(e.target.value); setMoveId(null); }} placeholder="e.g. Germany" className="h-12 rounded-xl bg-card" />
+                  {fieldErr.destination && <p className="text-sm text-destructive">{fieldErr.destination}</p>}
                 </div>
               </div>
 

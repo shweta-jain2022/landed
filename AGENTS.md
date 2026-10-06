@@ -15,3 +15,4 @@
 - Move setup writes `moves` straight from the browser client, relying on row-level security; why: simple owner-scoped insert, no server logic needed yet.
 - `corridor_knowledge` and `modifier_knowledge` are read-only to signed-in users and seeded with user-provided SQL only; why: content is curated and fact-checked by the owner.
 - Checklist generation runs in a signed-in server function that calls Lovable AI and writes checklist_items; why: keeps the AI key and prompt off the browser.
+- Checklist chat runs in a signed-in server function (classify, then modify) that logs move_events and rewrites checklist_items; chat replies are not stored; why: brief only asks to log user messages.

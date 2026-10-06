@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, ShieldCheck, Info } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Info, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -80,10 +80,17 @@ function MovePage() {
 
   return (
     <main className="min-h-screen px-6 py-10">
-      <header className="mx-auto max-w-xl">
+      <header className="mx-auto flex max-w-xl items-center justify-between">
         <Link to="/setup" className="flex w-fit items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
           <span className="font-display text-lg text-primary">Landed</span>
+        </Link>
+        <Link
+          to="/move/$moveId/chat"
+          params={{ moveId }}
+          className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium shadow-soft hover:border-primary/50"
+        >
+          <MessageCircle className="h-4 w-4 text-primary" /> Ask or update your move
         </Link>
       </header>
 

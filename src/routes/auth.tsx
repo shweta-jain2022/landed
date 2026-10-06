@@ -21,6 +21,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,15 +31,12 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (!error && data.session) {
-      navigate({ to: "/setup" });
-      return;
-    }
-    // Existing account: quietly sign in with the same details.
-    const res = await supabase.auth.signInWithPassword({ email, password });
+    const { error } =
+      mode === "signup"
+        ? await supabase.auth.signUp({ email, password })
+        : await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (res.error) setError(error?.message ?? "That email is already registered with a different password.");
+    if (error) setError(error.message);
     else navigate({ to: "/setup" });
   }
 
@@ -46,7 +44,9 @@ function AuthPage() {
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm rounded-3xl border bg-card p-8 shadow-soft">
         <span className="font-display text-lg text-primary">Landed</span>
-        <h1 className="mt-4 text-3xl font-semibold">Create your account</h1>
+        <h1 className="mt-4 text-3xl font-semibold">
+          {mode === "signup" ? "Create your account" : "Welcome back"}
+        </h1>
         <form onSubmit={submit} className="mt-8 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -58,9 +58,16 @@ function AuthPage() {
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
-            {loading ? "Please wait…" : "Create account"}
+            {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
           </Button>
         </form>
+        <button
+          type="button"
+          onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setError(null); }}
+          className="mt-6 w-full text-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          {mode === "signup" ? "Already have an account? Sign in" : "New here? Create an account"}
+        </button>
       </div>
     </main>
   );

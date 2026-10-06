@@ -1,24 +1,33 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Landed — Relocation paperwork, sorted" },
+      { name: "description", content: "Moving abroad for work or study? Landed builds your personal move checklist." },
+      { property: "og:title", content: "Landed — Relocation paperwork, sorted" },
+      { property: "og:description", content: "Moving abroad for work or study? Landed builds your personal move checklist." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <span className="font-display text-xl text-primary">Landed</span>
+      <h1 className="mt-6 max-w-xl text-5xl font-semibold leading-tight">
+        Your move abroad, without the paperwork panic.
+      </h1>
+      <p className="mt-4 max-w-md text-muted-foreground">
+        A personal checklist for every visa, permit and registration — for work or study.
+      </p>
+      <Button asChild size="lg" className="mt-10 rounded-full px-8">
+        <Link to="/setup">Get started</Link>
+      </Button>
+    </main>
   );
 }

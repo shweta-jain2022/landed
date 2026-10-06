@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Briefcase, GraduationCap, CheckCircle2, ArrowLeft } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { generateChecklist } from "@/lib/checklist.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +37,8 @@ function SetupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
+  const [moveId, setMoveId] = useState<string | null>(null);
+  const generate = useServerFn(generateChecklist);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,17 +55,31 @@ function SetupPage() {
       .eq("move_type", moveType)
       .limit(1)
       .maybeSingle();
-    const { error } = await supabase.from("moves").insert({
-      user_id: user.id,
-      origin_country: o,
-      destination_country: d,
-      move_type: moveType,
-      visa_type: corridor?.default_visa_type ?? null,
-      target_date: targetDate,
-    });
-    setLoading(false);
-    if (error) return setError(error.message);
-    setCreated(true);
+    let id = moveId;
+    if (!id) {
+      const { data: inserted, error } = await supabase.from("moves").insert({
+        user_id: user.id,
+        origin_country: o,
+        destination_country: d,
+        move_type: moveType,
+        visa_type: corridor?.default_visa_type ?? null,
+        target_date: targetDate,
+      }).select("id").single();
+      if (error || !inserted) {
+        setLoading(false);
+        return setError(error?.message ?? "Couldn't save your move.");
+      }
+      id = inserted.id;
+      setMoveId(id);
+    }
+    try {
+      const res = await generate({ data: { moveId: id } });
+      if (!res.ok) throw new Error();
+      navigate({ to: "/move/$moveId", params: { moveId: id } });
+    } catch {
+      setLoading(false);
+      setError("We couldn't generate your checklist, please try again");
+    }
   }
 
   async function signOut() {
@@ -106,11 +124,11 @@ function SetupPage() {
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="origin">Moving from</Label>
-                  <Input id="origin" required value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="e.g. India" className="h-12 rounded-xl bg-card" />
+                  <Input id="origin" required value={origin} onChange={(e) => { setOrigin(e.target.value); setMoveId(null); }} placeholder="e.g. India" className="h-12 rounded-xl bg-card" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="destination">Moving to</Label>
-                  <Input id="destination" required value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. Germany" className="h-12 rounded-xl bg-card" />
+                  <Input id="destination" required value={destination} onChange={(e) => { setDestination(e.target.value); setMoveId(null); }} placeholder="e.g. Germany" className="h-12 rounded-xl bg-card" />
                 </div>
               </div>
 
@@ -125,7 +143,7 @@ function SetupPage() {
                       key={value}
                       type="button"
                       aria-pressed={active}
-                      onClick={() => setMoveType(value)}
+                      onClick={() => { setMoveType(value); setMoveId(null); }}
                       className={cn(
                         "flex flex-col items-center gap-3 rounded-2xl border-2 bg-card px-4 py-8 transition-all",
                         active ? "border-primary bg-selected shadow-soft" : "border-border hover:border-primary/40",
@@ -140,14 +158,14 @@ function SetupPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="date">Target move date</Label>
-                <Input id="date" type="date" required value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className="h-12 rounded-xl bg-card" />
+                <Input id="date" type="date" required value={targetDate} onChange={(e) => { setTargetDate(e.target.value); setMoveId(null); }} className="h-12 rounded-xl bg-card" />
               </div>
 
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <div className="text-center">
                 <Button type="submit" size="lg" disabled={loading} className="h-12 w-full rounded-xl">
-                  {loading ? "Saving…" : "Generate my checklist"}
+                  {loading ? "Building your checklist…" : "Generate my checklist"}
                 </Button>
                 <p className="mt-3 text-xs text-muted-foreground">Takes about 15 seconds</p>
               </div>

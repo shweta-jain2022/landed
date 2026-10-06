@@ -41,7 +41,7 @@ function SetupPage() {
   const [moveId, setMoveId] = useState<string | null>(null);
   const generate = useServerFn(generateChecklist);
   const normalize = useServerFn(normalizeCountries);
-  const [fieldErr, setFieldErr] = useState<{ origin?: string; destination?: string }>({});
+  const [fieldErr, setFieldErr] = useState<{ origin?: string | undefined; destination?: string | undefined }>({});
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

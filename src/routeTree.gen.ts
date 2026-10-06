@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedSetupRouteImport } from './routes/_authenticated/setup'
 import { Route as AuthenticatedMoveMoveIdRouteImport } from './routes/_authenticated/move.$moveId'
+import { Route as AuthenticatedMoveMoveIdChatRouteImport } from './routes/_authenticated/move_.$moveId.chat'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -39,18 +40,26 @@ const AuthenticatedMoveMoveIdRoute = AuthenticatedMoveMoveIdRouteImport.update({
   path: '/move/$moveId',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMoveMoveIdChatRoute =
+  AuthenticatedMoveMoveIdChatRouteImport.update({
+    id: '/move_/$moveId/chat',
+    path: '/move/$moveId/chat',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/move/$moveId': typeof AuthenticatedMoveMoveIdRoute
+  '/move/$moveId/chat': typeof AuthenticatedMoveMoveIdChatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/move/$moveId': typeof AuthenticatedMoveMoveIdRoute
+  '/move/$moveId/chat': typeof AuthenticatedMoveMoveIdChatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +68,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/setup': typeof AuthenticatedSetupRoute
   '/_authenticated/move/$moveId': typeof AuthenticatedMoveMoveIdRoute
+  '/_authenticated/move_/$moveId/chat': typeof AuthenticatedMoveMoveIdChatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/setup' | '/move/$moveId'
+  fullPaths: '/' | '/auth' | '/setup' | '/move/$moveId' | '/move/$moveId/chat'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/setup' | '/move/$moveId'
+  to: '/' | '/auth' | '/setup' | '/move/$moveId' | '/move/$moveId/chat'
   id:
     | '__root__'
     | '/'
@@ -72,6 +82,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/setup'
     | '/_authenticated/move/$moveId'
+    | '/_authenticated/move_/$moveId/chat'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,17 +128,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMoveMoveIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/move_/$moveId/chat': {
+      id: '/_authenticated/move_/$moveId/chat'
+      path: '/move/$moveId/chat'
+      fullPath: '/move/$moveId/chat'
+      preLoaderRoute: typeof AuthenticatedMoveMoveIdChatRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSetupRoute: typeof AuthenticatedSetupRoute
   AuthenticatedMoveMoveIdRoute: typeof AuthenticatedMoveMoveIdRoute
+  AuthenticatedMoveMoveIdChatRoute: typeof AuthenticatedMoveMoveIdChatRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSetupRoute: AuthenticatedSetupRoute,
   AuthenticatedMoveMoveIdRoute: AuthenticatedMoveMoveIdRoute,
+  AuthenticatedMoveMoveIdChatRoute: AuthenticatedMoveMoveIdChatRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

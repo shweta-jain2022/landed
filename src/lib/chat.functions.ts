@@ -128,11 +128,11 @@ weak match.`;
       ].join("\n");
 
       const parsed = parseJson(await generateTextViaGateway(MODIFY_PROMPT, userMsg)) as Record<string, unknown> | unknown[];
-      const obj = Array.isArray(parsed) ? { checklist: parsed } : parsed;
-      const listRaw = obj.checklist ?? obj.tasks ?? obj.items;
+      const obj: Record<string, unknown> = Array.isArray(parsed) ? { checklist: parsed } : parsed;
+      const listRaw = obj["checklist"] ?? obj["tasks"] ?? obj["items"];
       const next = normTasks(listRaw);
-      const grounded = obj.grounded === true && !!matched;
-      let response = typeof obj.response === "string" ? obj.response : "";
+      const grounded = obj["grounded"] === true && !!matched;
+      let response = typeof obj["response"] === "string" ? obj["response"] : "";
 
       const before = new Set(current.map(sig));
       const after = new Set(next.map(sig));

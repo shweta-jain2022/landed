@@ -14,3 +14,4 @@
 - Signed-in pages live under `src/routes/_authenticated/` (client-only gate redirecting to `/auth`); why: the login session lives in browser storage, which the server can't read.
 - Move setup writes `moves` straight from the browser client, relying on row-level security; why: simple owner-scoped insert, no server logic needed yet.
 - `corridor_knowledge` and `modifier_knowledge` are read-only to signed-in users and seeded with user-provided SQL only; why: content is curated and fact-checked by the owner.
+- Checklist generation runs in a signed-in server function that calls Lovable AI and writes checklist_items; why: keeps the AI key and prompt off the browser.

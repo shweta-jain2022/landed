@@ -14,7 +14,184 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      checklist_items: {
+        Row: {
+          category: string | null
+          change_reason: string | null
+          created_at: string
+          description: string | null
+          id: string
+          move_id: string
+          status: string
+          timing_window: string | null
+          title: string
+          version: number
+        }
+        Insert: {
+          category?: string | null
+          change_reason?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          move_id: string
+          status?: string
+          timing_window?: string | null
+          title: string
+          version?: number
+        }
+        Update: {
+          category?: string | null
+          change_reason?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          move_id?: string
+          status?: string
+          timing_window?: string | null
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_move_id_fkey"
+            columns: ["move_id"]
+            isOneToOne: false
+            referencedRelation: "moves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corridor_knowledge: {
+        Row: {
+          content_blob: string | null
+          created_at: string
+          default_visa_type: string | null
+          destination_country: string
+          id: string
+          last_verified: string | null
+          move_type: string
+          origin_country: string
+          source_links: string[] | null
+        }
+        Insert: {
+          content_blob?: string | null
+          created_at?: string
+          default_visa_type?: string | null
+          destination_country: string
+          id?: string
+          last_verified?: string | null
+          move_type: string
+          origin_country: string
+          source_links?: string[] | null
+        }
+        Update: {
+          content_blob?: string | null
+          created_at?: string
+          default_visa_type?: string | null
+          destination_country?: string
+          id?: string
+          last_verified?: string | null
+          move_type?: string
+          origin_country?: string
+          source_links?: string[] | null
+        }
+        Relationships: []
+      }
+      modifier_knowledge: {
+        Row: {
+          content_blob: string | null
+          created_at: string
+          destination_country: string
+          id: string
+          last_verified: string | null
+          modifier_type: string
+          quick_select_label: string | null
+          source_links: string[] | null
+        }
+        Insert: {
+          content_blob?: string | null
+          created_at?: string
+          destination_country: string
+          id?: string
+          last_verified?: string | null
+          modifier_type: string
+          quick_select_label?: string | null
+          source_links?: string[] | null
+        }
+        Update: {
+          content_blob?: string | null
+          created_at?: string
+          destination_country?: string
+          id?: string
+          last_verified?: string | null
+          modifier_type?: string
+          quick_select_label?: string | null
+          source_links?: string[] | null
+        }
+        Relationships: []
+      }
+      move_events: {
+        Row: {
+          created_at: string
+          event_text: string
+          id: string
+          move_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_text: string
+          id?: string
+          move_id: string
+        }
+        Update: {
+          created_at?: string
+          event_text?: string
+          id?: string
+          move_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "move_events_move_id_fkey"
+            columns: ["move_id"]
+            isOneToOne: false
+            referencedRelation: "moves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      moves: {
+        Row: {
+          created_at: string
+          destination_country: string
+          id: string
+          move_type: string
+          origin_country: string
+          target_date: string
+          user_id: string
+          visa_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          destination_country: string
+          id?: string
+          move_type: string
+          origin_country: string
+          target_date: string
+          user_id: string
+          visa_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          destination_country?: string
+          id?: string
+          move_type?: string
+          origin_country?: string
+          target_date?: string
+          user_id?: string
+          visa_type?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

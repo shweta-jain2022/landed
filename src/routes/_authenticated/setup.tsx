@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { generateChecklist } from "@/lib/checklist.functions";
+import { normalizeCountries } from "@/lib/country.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,14 +40,32 @@ function SetupPage() {
   const [created, setCreated] = useState(false);
   const [moveId, setMoveId] = useState<string | null>(null);
   const generate = useServerFn(generateChecklist);
+  const normalize = useServerFn(normalizeCountries);
+  const [fieldErr, setFieldErr] = useState<{ origin?: string; destination?: string }>({});
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!moveType) return setError("Choose Work or Study.");
     setLoading(true);
     setError(null);
-    const o = origin.trim();
-    const d = destination.trim();
+    setFieldErr({});
+    let o = origin.trim();
+    let d = destination.trim();
+    let id = moveId;
+    if (!id) {
+      const norm = await normalize({ data: { origin: o, destination: d } }).catch(() => ({ ok: false as const }));
+      if (!norm.ok) {
+        setLoading(false);
+        return setError("Something went wrong checking the countries, please try again.");
+      }
+      if (!norm.origin || !norm.destination) {
+        const msg = "We couldn't recognize this as a country -- please check the spelling.";
+        setFieldErr({ origin: norm.origin ? undefined : msg, destination: norm.destination ? undefined : msg });
+        return setLoading(false);
+      }
+      o = norm.origin;
+      d = norm.destination;
+    }
     const { data: corridor } = await supabase
       .from("corridor_knowledge")
       .select("default_visa_type")
@@ -55,7 +74,6 @@ function SetupPage() {
       .eq("move_type", moveType)
       .limit(1)
       .maybeSingle();
-    let id = moveId;
     if (!id) {
       const { data: inserted, error } = await supabase.from("moves").insert({
         user_id: user.id,

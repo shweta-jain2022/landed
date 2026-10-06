@@ -21,42 +21,32 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setNotice(null);
-    if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/setup` },
-      });
-      if (error) setError(error.message);
-      else if (data.session) navigate({ to: "/setup" });
-      else setNotice("Check your email to confirm your account, then come back to sign in.");
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setError(error.message);
-      else navigate({ to: "/setup" });
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (!error && data.session) {
+      navigate({ to: "/setup" });
+      return;
     }
+    // Existing account: quietly sign in with the same details.
+    const res = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
+    if (res.error) setError(error?.message ?? "That email is already registered with a different password.");
+    else navigate({ to: "/setup" });
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
       <div className="w-full max-w-sm rounded-3xl border bg-card p-8 shadow-soft">
         <span className="font-display text-lg text-primary">Landed</span>
-        <h1 className="mt-4 text-3xl font-semibold">
-          {mode === "signup" ? "Create your account" : "Welcome back"}
-        </h1>
+        <h1 className="mt-4 text-3xl font-semibold">Create your account</h1>
         <form onSubmit={submit} className="mt-8 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -67,18 +57,10 @@ function AuthPage() {
             <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="h-11 rounded-xl" />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          {notice && <p className="text-sm text-primary">{notice}</p>}
           <Button type="submit" disabled={loading} className="h-11 w-full rounded-xl">
-            {loading ? "Please wait…" : mode === "signup" ? "Sign up" : "Sign in"}
+            {loading ? "Please wait…" : "Create account"}
           </Button>
         </form>
-        <button
-          type="button"
-          onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-          className="mt-6 w-full text-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          {mode === "signup" ? "Already have an account? Sign in" : "New here? Create an account"}
-        </button>
       </div>
     </main>
   );

@@ -1,0 +1,1 @@
+ALTER TABLE public.checklist_items ADD COLUMN urgency text NOT NULL DEFAULT 'normal' CHECK (urgency IN ('urgent','normal'));

@@ -25,6 +25,7 @@ export type Database = {
           status: string
           timing_window: string | null
           title: string
+          urgency: string
           version: number
         }
         Insert: {
@@ -37,6 +38,7 @@ export type Database = {
           status?: string
           timing_window?: string | null
           title: string
+          urgency?: string
           version?: number
         }
         Update: {
@@ -49,6 +51,7 @@ export type Database = {
           status?: string
           timing_window?: string | null
           title?: string
+          urgency?: string
           version?: number
         }
         Relationships: [

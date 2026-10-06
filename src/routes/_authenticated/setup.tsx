@@ -74,10 +74,17 @@ function SetupPage() {
   return (
     <main className="min-h-screen px-6 py-10">
       <header className="mx-auto flex max-w-xl items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" />
-          <span className="font-display text-lg text-primary">Landed</span>
-        </Link>
+        {created ? (
+          <button type="button" onClick={() => setCreated(false)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="font-display text-lg text-primary">Landed</span>
+          </button>
+        ) : (
+          <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="font-display text-lg text-primary">Landed</span>
+          </Link>
+        )}
         <button onClick={signOut} className="text-sm text-muted-foreground hover:text-foreground">
           Sign out
         </button>

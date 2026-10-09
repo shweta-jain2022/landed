@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/move/$moveId")({
 });
 
 const SECTIONS = [
-  ["before_arrival", "Before arrival"],
+  ["before_arrival", "Before you leave"],
   ["first_week", "First week"],
   ["first_month", "First month"],
   ["first_90_days", "First 90 days"],

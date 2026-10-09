@@ -187,7 +187,6 @@ function MovePage() {
                               Added because: {i.added_because ?? i.change_reason}
                             </Link>
                           )}
-                          {i.grounded && i.source_section && <p className="mt-2 text-xs text-verified">Source: {i.source_section}</p>}
                           <VerifyBadge grounded={i.grounded} small className="mt-3" />
                         </div>
                         {i.urgency === "urgent" && (

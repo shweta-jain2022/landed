@@ -213,6 +213,7 @@ export type Database = {
           match_reason: string | null
           matched_modifier: string | null
           move_id: string
+          timings: Json | null
         }
         Insert: {
           created_at?: string
@@ -222,6 +223,7 @@ export type Database = {
           match_reason?: string | null
           matched_modifier?: string | null
           move_id: string
+          timings?: Json | null
         }
         Update: {
           created_at?: string
@@ -231,6 +233,7 @@ export type Database = {
           match_reason?: string | null
           matched_modifier?: string | null
           move_id?: string
+          timings?: Json | null
         }
         Relationships: [
           {

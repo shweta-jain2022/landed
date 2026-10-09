@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const COUNTRY_MODEL = "openai/gpt-5.4-mini";
+
 const prompt = (raw: string) => `The user typed this as a country name, possibly using an abbreviation, 
 alias, or with a typo: "${raw}"
 
@@ -24,7 +26,7 @@ export const normalizeCountries = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { generateTextViaGateway } = await import("./ai-gateway.server");
     const one = async (raw: string) => {
-      const out = (await generateTextViaGateway("Follow the instructions exactly.", prompt(raw)))
+      const out = (await generateTextViaGateway("Follow the instructions exactly.", prompt(raw), COUNTRY_MODEL))
         .trim()
         .replace(/^["']|["'.]$/g, "")
         .trim();

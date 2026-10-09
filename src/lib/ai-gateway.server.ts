@@ -20,8 +20,14 @@ export class AiGatewayError extends Error {
   }
 }
 
+export const DEFAULT_MODEL = "openai/gpt-6-astra";
+
 /** Streams a Responses call and returns the final text. */
-export async function generateTextViaGateway(instructions: string, userMessage: string) {
+export async function generateTextViaGateway(
+  instructions: string,
+  userMessage: string,
+  model: string = DEFAULT_MODEL,
+) {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new AiGatewayError("AI is not configured", 401);
   const provider = createOpenAI({
@@ -32,7 +38,7 @@ export async function generateTextViaGateway(instructions: string, userMessage: 
   });
   let streamError: unknown;
   const result = streamText({
-    model: provider.responses("openai/gpt-6-astra"),
+    model: provider.responses(model),
     instructions,
     messages: [{ role: "user", content: userMessage }],
     maxRetries: 0,

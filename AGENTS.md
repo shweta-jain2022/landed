@@ -16,3 +16,4 @@
 - `corridor_knowledge` and `modifier_knowledge` are read-only to signed-in users and seeded with user-provided SQL only; why: content is curated and fact-checked by the owner.
 - Checklist generation runs in a signed-in server function that calls Lovable AI and writes checklist_items; why: keeps the AI key and prompt off the browser.
 - Checklist chat runs in a signed-in server function (classify, then modify) that logs move_events and rewrites checklist_items; chat replies are not stored; why: brief only asks to log user messages.
+- AI model choice lives in one place: `generateTextViaGateway` in `src/lib/ai-gateway.server.ts` takes an optional model argument defaulting to `DEFAULT_MODEL`, and a feature passes its own id only when it deliberately wants a different one; why: keeps one request shape for every call and lets a per-feature model swap without touching the shared helper.

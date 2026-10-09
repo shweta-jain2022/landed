@@ -205,7 +205,7 @@ function MovePage() {
           {blocks.map((block) => (
             <div key={block.divider ?? "before"} className="space-y-10">
               {block.divider && (
-                <h2 className="border-b border-border/70 pb-3 text-base font-semibold text-foreground">{block.divider}</h2>
+                <h2 className="mt-4 border-b border-border/70 pb-4 text-base font-semibold text-foreground">{block.divider}</h2>
               )}
               {block.sections.map(({ win, label, list }) => (
                 <section key={win}>

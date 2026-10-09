@@ -1,9 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, ShieldCheck, Info, MessageCircle } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Info, MessageCircle, ChevronDown } from "lucide-react";
 import { VerifyBadge } from "@/components/VerifyBadge";
+import { LabelLegend } from "@/components/LabelLegend";
+import { PlanningDisclaimer } from "@/components/PlanningDisclaimer";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -59,6 +63,32 @@ function MovePage() {
   });
   const [err, setErr] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "verified" | "unverified">("all");
+  const { data: modifierSources = [] } = useQuery({
+    queryKey: ["move-modifier-sources", moveId, data?.items.filter((i) => i.grounded && i.added_by_message_id).map((i) => i.added_by_message_id)],
+    enabled: !!data?.move,
+    queryFn: async () => {
+      const move = data?.move;
+      const messageIds = new Set(data?.items.filter((i) => i.grounded && i.added_by_message_id).map((i) => i.added_by_message_id));
+      if (!move || !messageIds.size) return [];
+      const [{ data: messages }, { data: events }, { data: modifiers }] = await Promise.all([
+        supabase.from("chat_messages").select("id, created_at, match_reason, grounded").eq("move_id", moveId).eq("role", "assistant").order("created_at"),
+        supabase.from("move_events").select("created_at, matched_modifier, match_reason").eq("move_id", moveId).eq("match_level", "exact").order("created_at"),
+        supabase.from("modifier_knowledge").select("id, modifier_type, quick_select_label, last_verified, source_links").ilike("destination_country", move.destination_country),
+      ]);
+      const usedTopics = new Set<string>();
+      for (const [index, message] of (messages ?? []).entries()) {
+        if (!message.grounded || !messageIds.has(message.id)) continue;
+        const nextMessage = messages?.[index + 1];
+        const event = events?.find((e) =>
+          e.created_at >= message.created_at &&
+          (!nextMessage || e.created_at < nextMessage.created_at) &&
+          e.match_reason === message.match_reason,
+        );
+        if (event?.matched_modifier) usedTopics.add(event.matched_modifier);
+      }
+      return (modifiers ?? []).filter((m) => usedTopics.has(m.modifier_type) && (m.last_verified || m.source_links?.length));
+    },
+  });
 
   async function toggle(id: string, done: boolean) {
     const status = done ? "done" : "todo";
@@ -113,6 +143,7 @@ function MovePage() {
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
           {corridor && verifiedCount > 0 ? (
             <Popover>
               <PopoverTrigger className="flex items-center gap-2 text-left text-sm text-verified underline-offset-4 hover:underline">
@@ -128,6 +159,8 @@ function MovePage() {
           ) : (
             <p className="flex items-center gap-2 text-sm text-muted-foreground"><Info className="h-4 w-4 shrink-0" /> {summary}</p>
           )}
+          <LabelLegend />
+          </div>
           <div role="group" aria-label="Filter items" className="flex rounded-full border bg-card p-0.5 text-xs shadow-soft">
             {([["all", "All"], ["verified", "Verified"], ["unverified", "General knowledge"]] as const).map(([v, l]) => (
               <button
@@ -202,6 +235,39 @@ function MovePage() {
             );
           })}
         </div>
+        <Collapsible className="mt-10 border-t pt-4">
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="ghost" className="h-auto w-full justify-between whitespace-normal px-0 text-left hover:bg-transparent">
+              Sources and last verified
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4 space-y-5 text-sm">
+            {corridor ? (
+              <>
+                <div className="space-y-2">
+                  <p className="font-medium">{move.origin_country} → {move.destination_country} · <span className="capitalize">{move.move_type}</span></p>
+                  {corridor.last_verified && <p className="text-muted-foreground">Last verified: {corridor.last_verified}</p>}
+                  {(corridor.source_links ?? []).map((link) => (
+                    <a key={link} href={link} target="_blank" rel="noopener noreferrer" className="block break-all text-primary hover:underline">{link}</a>
+                  ))}
+                </div>
+                {modifierSources.map((modifier) => (
+                  <div key={modifier.id} className="space-y-2">
+                    <p className="font-medium">{modifier.quick_select_label ?? modifier.modifier_type}</p>
+                    {modifier.last_verified && <p className="text-muted-foreground">Last verified: {modifier.last_verified}</p>}
+                    {(modifier.source_links ?? []).map((link) => (
+                      <a key={link} href={link} target="_blank" rel="noopener noreferrer" className="block break-all text-primary hover:underline">{link}</a>
+                    ))}
+                  </div>
+                ))}
+              </>
+            ) : (
+              <p className="text-muted-foreground">We don’t have curated sources for this route yet. Every item here is general knowledge.</p>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+        <PlanningDisclaimer />
       </div>
     </main>
   );

@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, SendHorizontal, Plus } from "lucide-react";
 import { VerifyBadge } from "@/components/VerifyBadge";
+import { LabelLegend } from "@/components/LabelLegend";
+import { PlanningDisclaimer } from "@/components/PlanningDisclaimer";
 import { supabase } from "@/integrations/supabase/client";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { Button } from "@/components/ui/button";
@@ -207,6 +209,10 @@ function ChatPage() {
         <Input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a question or change…" className="border-0 shadow-none focus-visible:ring-0" />
         <Button type="submit" size="icon" disabled={busy || !text.trim()} aria-label="Send"><SendHorizontal className="h-4 w-4" /></Button>
       </form>
+      <div className="mx-auto mt-3 w-full max-w-xl">
+        <LabelLegend />
+      </div>
+      <PlanningDisclaimer />
     </main>
   );
 }

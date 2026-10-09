@@ -81,13 +81,7 @@ function MovePage() {
   const pct = items.length ? Math.round((done / items.length) * 100) : 0;
   const verifiedCount = items.filter((i) => i.grounded).length;
   const generalCount = items.length - verifiedCount;
-  const summary = !items.length
-    ? "No items yet."
-    : verifiedCount === items.length
-      ? `All ${items.length} items verified.`
-      : verifiedCount === 0
-        ? `${items.length} items: none verified, all general knowledge.`
-        : `${items.length} items: ${verifiedCount} verified, ${generalCount} general knowledge`;
+  const summary = `${items.length} items: ${verifiedCount} verified, ${generalCount} general knowledge.`;
   const shown = items.filter((i) => (filter === "all" ? true : filter === "verified" ? i.grounded : !i.grounded));
 
   return (
@@ -135,7 +129,7 @@ function MovePage() {
             <p className="flex items-center gap-2 text-sm text-muted-foreground"><Info className="h-4 w-4 shrink-0" /> {summary}</p>
           )}
           <div role="group" aria-label="Filter items" className="flex rounded-full border bg-card p-0.5 text-xs shadow-soft">
-            {([["all", "All"], ["verified", "Verified only"], ["unverified", "Not verified"]] as const).map(([v, l]) => (
+            {([["all", "All"], ["verified", "Verified"], ["unverified", "General knowledge"]] as const).map(([v, l]) => (
               <button
                 key={v}
                 type="button"
@@ -193,6 +187,7 @@ function MovePage() {
                               Added because: {i.added_because ?? i.change_reason}
                             </Link>
                           )}
+                          {i.grounded && i.source_section && <p className="mt-2 text-xs text-verified">Source: {i.source_section}</p>}
                           <VerifyBadge grounded={i.grounded} small className="mt-3" />
                         </div>
                         {i.urgency === "urgent" && (

@@ -82,6 +82,7 @@ export type Database = {
           id: string
           move_id: string
           source_label: string
+          source_section: string | null
           status: string
           timing_window: string | null
           title: string
@@ -99,6 +100,7 @@ export type Database = {
           id?: string
           move_id: string
           source_label?: string
+          source_section?: string | null
           status?: string
           timing_window?: string | null
           title: string
@@ -116,6 +118,7 @@ export type Database = {
           id?: string
           move_id?: string
           source_label?: string
+          source_section?: string | null
           status?: string
           timing_window?: string | null
           title?: string

@@ -29,6 +29,13 @@
       "when": 1791525977336,
       "tag": "0003_item_labels_chat_history",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791529117385,
+      "tag": "0004_checklist_source_section",
+      "breakpoints": true
     }
   ]
 }

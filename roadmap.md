@@ -1,3 +1,3 @@
-- [ ] Add collapsible label explanations to checklist and chat.
-- [ ] Add collapsed checklist sources panel using stored route and used modifier records only.
-- [ ] Add in-flow planning disclaimer to checklist and chat, preserving existing behavior.
+- [x] Add collapsible label explanations to checklist and chat.
+- [x] Add collapsed checklist sources panel using stored route and used modifier records only.
+- [x] Add in-flow planning disclaimer to checklist and chat, preserving existing behavior.

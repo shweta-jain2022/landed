@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-      <span className="font-display text-xl text-primary">Landed</span>
+      <span className="font-display text-4xl font-bold tracking-tight text-primary sm:text-5xl">Landed</span>
       <h1 className="mt-6 max-w-xl text-5xl font-semibold leading-tight">
         Your move abroad, without the paperwork panic.
       </h1>

@@ -147,9 +147,11 @@ function MovePage() {
         <Link
           to="/move/$moveId/chat"
           params={{ moveId }}
-          className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium shadow-soft hover:border-primary/50"
+          aria-label="Ask or update your move"
+          className="flex shrink-0 items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-sm font-medium shadow-soft hover:border-primary/50 sm:px-4 sm:py-2"
         >
-          <MessageCircle className="h-4 w-4 text-primary" /> Ask or update your move
+          <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
+          <span className="hidden sm:inline">Ask or update your move</span>
         </Link>
       </header>
 

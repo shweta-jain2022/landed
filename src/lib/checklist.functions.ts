@@ -93,7 +93,7 @@ export const generateChecklist = createServerFn({ method: "POST" })
       const tasks = parseTasks(text);
       await supabase.from("checklist_items").delete().eq("move_id", move.id);
       const { error } = await supabase.from("checklist_items").insert(
-        tasks.map((t) => ({ ...t, move_id: move.id, version: 1, change_reason: null })),
+        tasks.map((t) => ({ ...t, move_id: move.id, version: 1, change_reason: null, grounded: !!corridor, source_label: corridor ? "Verified source" : "General knowledge, not verified", added_because: null, added_by_message_id: null })),
       );
       if (error) throw error;
       return { ok: true as const };

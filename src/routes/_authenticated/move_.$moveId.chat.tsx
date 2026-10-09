@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, SendHorizontal, ShieldCheck, Globe, Plus } from "lucide-react";
+import { ArrowLeft, SendHorizontal, Plus } from "lucide-react";
+import { VerifyBadge } from "@/components/VerifyBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { Button } from "@/components/ui/button";
@@ -31,18 +32,10 @@ type Msg =
   | { role: "error"; text: string };
 
 function Tag({ grounded, source, small }: { grounded: boolean; source: Source; small?: boolean }) {
-  const base = cn("inline-flex items-center gap-1.5 rounded-full border font-medium", small ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs");
-  if (!grounded)
-    return (
-      <span className={cn(base, "border-dashed border-muted-foreground/40 bg-muted text-muted-foreground")}>
-        <Globe className="h-3.5 w-3.5" /> General knowledge -- not verified
-      </span>
-    );
+  if (!grounded) return <VerifyBadge grounded={false} small={small} label="General knowledge -- not verified" />;
   return (
     <Popover>
-      <PopoverTrigger className={cn(base, "border-accent bg-accent text-accent-foreground")}>
-        <ShieldCheck className="h-3.5 w-3.5" /> Verified source
-      </PopoverTrigger>
+      <PopoverTrigger><VerifyBadge grounded small={small} label="Verified source" /></PopoverTrigger>
       <PopoverContent className="w-80 space-y-2">
         <p className="text-sm">Last verified {source?.last_verified ?? "—"}</p>
         {(source?.source_links ?? []).map((l) => (
@@ -57,7 +50,35 @@ function ChatPage() {
   const { moveId } = Route.useParams();
   const qc = useQueryClient();
   const send = useServerFn(sendChatMessage);
-  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [pending, setPending] = useState<string | null>(null);
+  const historyKey = ["chat", moveId];
+  const { data: history = [], isLoading: loadingHistory } = useQuery({
+    queryKey: historyKey,
+    queryFn: async () => {
+      const { data } = await supabase.from("chat_messages").select("*").eq("move_id", moveId).order("created_at");
+      return data ?? [];
+    },
+  });
+  const { data: itemRows = [] } = useQuery({
+    queryKey: ["chat-items", moveId],
+    queryFn: async () => {
+      const { data } = await supabase.from("checklist_items").select("id, title, description, change_reason, added_by_message_id").eq("move_id", moveId);
+      return data ?? [];
+    },
+  });
+  const msgs: (Msg & { id: string })[] = history.map((h) =>
+    h.role === "user"
+      ? { id: h.id, role: "user", text: h.content }
+      : h.role === "error"
+        ? { id: h.id, role: "error", text: h.content }
+        : {
+            id: h.id, role: "ai", text: h.content, grounded: h.grounded, matchNote: h.closest_topic,
+            source: h.grounded ? { last_verified: h.source_last_verified, source_links: h.source_links ?? [] } : null,
+            changes: itemRows.filter((i) => i.added_by_message_id === h.id).map((i) => ({ title: i.title, description: i.description, change_reason: i.change_reason })),
+          },
+  );
+  if (pending) msgs.push({ id: "pending", role: "user", text: pending });
+  const hash = typeof window !== "undefined" ? window.location.hash.slice(1) : "";
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,25 +97,34 @@ function ChatPage() {
     },
   });
 
+  const scrolledToHash = useRef(false);
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    const target = hash && !scrolledToHash.current ? document.getElementById(`msg-${hash}`) : null;
+    if (target) {
+      scrolledToHash.current = true;
+      target.scrollIntoView({ block: "start" });
+    } else if (!hash || scrolledToHash.current) endRef.current?.scrollIntoView({ behavior: "smooth" });
     if (!busy) inputRef.current?.focus();
-  }, [msgs, busy]);
+  }, [history.length, itemRows.length, pending, busy, hash]);
 
   async function submit(message: string) {
     const m = message.trim();
     if (!m || busy) return;
     setText("");
     setBusy(true);
-    setMsgs((x) => [...x, { role: "user", text: m }]);
+    setPending(m);
+    scrolledToHash.current = true;
     try {
-      const r = await send({ data: { moveId, message: m } });
-      if (!r.ok) throw new Error();
-      setMsgs((x) => [...x, { role: "ai", text: r.response, grounded: r.grounded, matchNote: r.matchNote, source: r.source, changes: r.changes }]);
-      if (r.changes.length) qc.invalidateQueries({ queryKey: ["move", moveId] });
+      await send({ data: { moveId, message: m } });
     } catch {
-      setMsgs((x) => [...x, { role: "error", text: "Something went wrong, please try again." }]);
+      // the server saves its own error row when it can
     } finally {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: historyKey }),
+        qc.invalidateQueries({ queryKey: ["chat-items", moveId] }),
+        qc.invalidateQueries({ queryKey: ["move", moveId] }),
+      ]);
+      setPending(null);
       setBusy(false);
     }
   }
@@ -124,25 +154,25 @@ function ChatPage() {
       </header>
 
       <div className="mx-auto mt-8 w-full max-w-xl flex-1 space-y-5">
-        {msgs.length === 0 && (
+        {!loadingHistory && msgs.length === 0 && (
           <p className="text-sm text-muted-foreground">Tap a topic above or type anything about your move — a question, or a change like "I'm bringing my cat".</p>
         )}
-        {msgs.map((m, i) =>
+        {msgs.map((m) =>
           m.role === "user" ? (
-            <div key={i} className="flex justify-end">
+            <div key={m.id} id={`msg-${m.id}`} className="flex justify-end">
               <p className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground">{m.text}</p>
             </div>
           ) : m.role === "error" ? (
-            <p key={i} className="text-sm text-destructive">{m.text}</p>
+            <p key={m.id} id={`msg-${m.id}`} className="text-sm text-destructive">{m.text}</p>
           ) : (
-            <div key={i} className="max-w-[90%] space-y-3">
+            <div key={m.id} id={`msg-${m.id}`} className={cn("max-w-[90%] space-y-3 rounded-2xl", hash === m.id && "ring-2 ring-primary/40 ring-offset-4 ring-offset-background")}>
               <div className="rounded-2xl rounded-bl-md border bg-card px-4 py-3 shadow-soft">
                 <p className="whitespace-pre-wrap">{m.text}</p>
                 <div className="mt-3"><Tag grounded={m.grounded} source={m.source} /></div>
                 {m.matchNote && <p className="mt-2 text-xs text-muted-foreground">{m.matchNote}</p>}
               </div>
               {m.changes.map((c, j) => (
-                <div key={j} className={cn("rounded-xl border-l-4 bg-card px-4 py-3 shadow-soft", m.grounded ? "border-l-accent" : "border-l-muted-foreground/40")}>
+                <div key={j} className={cn("rounded-xl border-l-4 bg-card px-4 py-3 shadow-soft", m.grounded ? "border-l-verified" : "border-l-unverified")}>
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Plus className="h-3 w-3" /> added because {c.change_reason}</p>
                   <p className="mt-1 font-medium">{c.title}</p>
                   {c.description && <p className="mt-1 text-sm text-muted-foreground">{c.description}</p>}

@@ -14,14 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          closest_topic: string | null
+          content: string
+          created_at: string
+          grounded: boolean
+          id: string
+          items_added: Json
+          match_level: string | null
+          match_reason: string | null
+          move_id: string
+          role: string
+          source_label: string | null
+          source_last_verified: string | null
+          source_links: string[] | null
+        }
+        Insert: {
+          closest_topic?: string | null
+          content: string
+          created_at?: string
+          grounded?: boolean
+          id?: string
+          items_added?: Json
+          match_level?: string | null
+          match_reason?: string | null
+          move_id: string
+          role: string
+          source_label?: string | null
+          source_last_verified?: string | null
+          source_links?: string[] | null
+        }
+        Update: {
+          closest_topic?: string | null
+          content?: string
+          created_at?: string
+          grounded?: boolean
+          id?: string
+          items_added?: Json
+          match_level?: string | null
+          match_reason?: string | null
+          move_id?: string
+          role?: string
+          source_label?: string | null
+          source_last_verified?: string | null
+          source_links?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_move_id_fkey"
+            columns: ["move_id"]
+            isOneToOne: false
+            referencedRelation: "moves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
+          added_because: string | null
+          added_by_message_id: string | null
           category: string | null
           change_reason: string | null
           created_at: string
           description: string | null
+          grounded: boolean
           id: string
           move_id: string
+          source_label: string
           status: string
           timing_window: string | null
           title: string
@@ -29,12 +89,16 @@ export type Database = {
           version: number
         }
         Insert: {
+          added_because?: string | null
+          added_by_message_id?: string | null
           category?: string | null
           change_reason?: string | null
           created_at?: string
           description?: string | null
+          grounded?: boolean
           id?: string
           move_id: string
+          source_label?: string
           status?: string
           timing_window?: string | null
           title: string
@@ -42,12 +106,16 @@ export type Database = {
           version?: number
         }
         Update: {
+          added_because?: string | null
+          added_by_message_id?: string | null
           category?: string | null
           change_reason?: string | null
           created_at?: string
           description?: string | null
+          grounded?: boolean
           id?: string
           move_id?: string
+          source_label?: string
           status?: string
           timing_window?: string | null
           title?: string

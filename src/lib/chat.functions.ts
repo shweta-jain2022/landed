@@ -81,6 +81,9 @@ export const sendChatMessage = createServerFn({ method: "POST" })
     ]);
     const current = items ?? [];
 
+    const { error: userErr } = await supabase.from("chat_messages").insert({ move_id: move.id, role: "user", content: data.message });
+    if (userErr) console.error("save user message failed", userErr);
+
     try {
       const { generateTextViaGateway } = await import("./ai-gateway.server");
 
@@ -163,23 +166,34 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
         next.length > 0 && (next.length !== current.length || next.some((t) => !before.has(sig(t))));
 
       const changes: Task[] = [];
+      const replyId = crypto.randomUUID();
+      const itemsAdded: string[] = [];
       if (changed) {
         const statusByTitle = new Map(current.map((i) => [i.title.trim().toLowerCase(), i.status]));
+        const oldBySig = new Map(current.map((i) => [sig(i), i]));
         const version = Math.max(0, ...current.map((i) => i.version)) + 1;
         const rows = next.map((t) => {
-          const isNew = !before.has(sig(t));
-          const reason = isNew ? t.change_reason ?? data.message.slice(0, 80) : null;
-          if (isNew) changes.push({ ...t, change_reason: reason });
+          const old = oldBySig.get(sig(t));
+          if (old) {
+            // Unchanged item: keep its own label and reason permanently.
+            return {
+              id: old.id, move_id: move.id, category: old.category, title: old.title, description: old.description,
+              timing_window: old.timing_window, urgency: old.urgency, status: old.status, version,
+              change_reason: old.change_reason, grounded: old.grounded, source_label: old.source_label,
+              added_because: old.added_because, added_by_message_id: old.added_by_message_id,
+            };
+          }
+          const reason = t.change_reason ?? data.message.slice(0, 80);
+          changes.push({ ...t, change_reason: reason });
+          const id = crypto.randomUUID();
+          itemsAdded.push(id);
           return {
-            move_id: move.id,
-            category: t.category,
-            title: t.title,
-            description: t.description,
-            timing_window: t.timing_window,
-            urgency: t.urgency,
+            id, move_id: move.id, category: t.category, title: t.title, description: t.description,
+            timing_window: t.timing_window, urgency: t.urgency,
             status: statusByTitle.get(t.title.trim().toLowerCase()) ?? "todo",
-            version,
-            change_reason: reason,
+            version, change_reason: reason,
+            grounded, source_label: grounded ? "Verified source" : "General knowledge, not verified",
+            added_because: reason, added_by_message_id: replyId,
           };
         });
         const removed = current.filter((i) => !after.has(sig(i))).length;
@@ -190,6 +204,19 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
         if (!response) response = `I updated your checklist: ${changes.length} added or changed, ${removed} removed.`;
       }
       if (!response) response = "No changes needed to your checklist.";
+
+      const matchNote =
+        level !== "exact" && matched
+          ? `Closest verified topic: ${matched.quick_select_label ?? matched.modifier_type} (${reason.replace(/\.$/, "")}).`
+          : null;
+      const { error: replyErr } = await supabase.from("chat_messages").insert({
+        id: replyId, move_id: move.id, role: "assistant", content: response, match_level: level, grounded,
+        source_label: grounded ? "Verified source" : "General knowledge, not verified",
+        match_reason: reason, closest_topic: matchNote, items_added: itemsAdded,
+        source_last_verified: grounded && matched ? matched.last_verified : null,
+        source_links: grounded && matched ? matched.source_links ?? [] : null,
+      });
+      if (replyErr) console.error("save reply failed", replyErr);
 
       return {
         ok: true as const,
@@ -205,6 +232,7 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
       };
     } catch (e) {
       console.error("chat failed", e);
+      await supabase.from("chat_messages").insert({ move_id: move.id, role: "error", content: "Something went wrong, please try again." });
       return { ok: false as const };
     }
   });

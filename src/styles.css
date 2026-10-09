@@ -52,6 +52,10 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
   --color-selected: var(--selected);
+  --color-verified: var(--verified);
+  --color-verified-soft: var(--verified-soft);
+  --color-unverified: var(--unverified);
+  --color-unverified-soft: var(--unverified-soft);
   --font-display: "Fraunces", Georgia, serif;
   --font-sans: "Figtree", system-ui, sans-serif;
   --shadow-soft: var(--shadow-soft);
@@ -68,6 +72,10 @@
 :root {
   --radius: 1rem;
   --background: oklch(0.975 0.012 85);
+  --verified: oklch(0.52 0.13 150);
+  --verified-soft: oklch(0.95 0.05 150);
+  --unverified: oklch(0.62 0.15 65);
+  --unverified-soft: oklch(0.96 0.06 80);
   --foreground: oklch(0.22 0.03 160);
   --card: oklch(0.995 0.005 85);
   --card-foreground: oklch(0.22 0.03 160);

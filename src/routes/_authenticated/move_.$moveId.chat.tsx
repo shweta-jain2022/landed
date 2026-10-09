@@ -32,7 +32,7 @@ type Msg =
   | { role: "error"; text: string };
 
 function Tag({ grounded, source, small }: { grounded: boolean; source: Source; small?: boolean }) {
-  if (!grounded) return <VerifyBadge grounded={false} small={small} label="General knowledge -- not verified" />;
+  if (!grounded) return <VerifyBadge grounded={false} small={small} label="General knowledge, not verified" />;
   return (
     <Popover>
       <PopoverTrigger><VerifyBadge grounded small={small} label="Verified source" /></PopoverTrigger>

@@ -179,7 +179,7 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
             return {
               id: old.id, move_id: move.id, category: old.category, title: old.title, description: old.description,
               timing_window: old.timing_window, urgency: old.urgency, status: old.status, version,
-              change_reason: old.change_reason, grounded: old.grounded, source_label: old.source_label,
+              change_reason: old.change_reason, grounded: old.grounded, source_label: old.source_label, source_section: old.source_section,
               added_because: old.added_because, added_by_message_id: old.added_by_message_id,
             };
           }
@@ -193,7 +193,7 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
             status: statusByTitle.get(t.title.trim().toLowerCase()) ?? "todo",
             version, change_reason: reason,
             grounded, source_label: grounded ? "Verified source" : "General knowledge, not verified",
-            added_because: reason, added_by_message_id: replyId,
+            added_because: reason, added_by_message_id: replyId, source_section: null,
           };
         });
         const removed = current.filter((i) => !after.has(sig(i))).length;

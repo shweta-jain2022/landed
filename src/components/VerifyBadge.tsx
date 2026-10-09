@@ -9,7 +9,7 @@ export function VerifyBadge({ grounded, label, small, className }: { grounded: b
     </span>
   ) : (
     <span className={cn(base, "border-unverified/40 bg-unverified-soft text-unverified")}>
-      <TriangleAlert className="h-3.5 w-3.5" /> {label ?? "Not verified"}
+      <TriangleAlert className="h-3.5 w-3.5" /> {label ?? "General knowledge"}
     </span>
   );
 }

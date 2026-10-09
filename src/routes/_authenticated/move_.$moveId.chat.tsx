@@ -84,16 +84,27 @@ function ChatPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
+  const GENERIC_CHIPS = [
+    "My spouse is joining later",
+    "I'm bringing a pet",
+    "I'm bringing my kids",
+    "I need to ship my belongings",
+    "I want to use my home driver's license",
+  ];
+
   const { data: chips = [] } = useQuery({
     queryKey: ["chips", moveId],
-    queryFn: async () => {
+    queryFn: async (): Promise<{ id: string; label: string; generic: boolean }[]> => {
       const { data: move } = await supabase.from("moves").select("destination_country").eq("id", moveId).maybeSingle();
       if (!move) return [];
       const { data } = await supabase
         .from("modifier_knowledge")
         .select("id, quick_select_label")
         .ilike("destination_country", move.destination_country);
-      return data ?? [];
+      if (data && data.length > 0) {
+        return data.map((c) => ({ id: c.id, label: c.quick_select_label ?? "", generic: false }));
+      }
+      return GENERIC_CHIPS.map((label, i) => ({ id: `generic-${i}`, label, generic: true }));
     },
   });
 
@@ -137,18 +148,21 @@ function ChatPage() {
         </Link>
         <h1 className="mt-8 text-3xl font-semibold">Ask or update your move</h1>
         {chips.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-2">
-            {chips.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                disabled={busy}
-                onClick={() => submit(c.quick_select_label ?? "", c.id)}
-                className="rounded-full border bg-card px-3.5 py-1.5 text-sm shadow-soft transition-colors hover:border-primary/50 disabled:opacity-50"
-              >
-                {c.quick_select_label}
-              </button>
-            ))}
+          <div className="mt-5 space-y-2">
+            {chips[0]?.generic && <p className="text-xs font-medium tracking-wide text-muted-foreground">Try asking</p>}
+            <div className="flex flex-wrap gap-2">
+              {chips.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => submit(c.label, c.generic ? undefined : c.id)}
+                  className="rounded-full border bg-card px-3.5 py-1.5 text-sm shadow-soft transition-colors hover:border-primary/50 disabled:opacity-50"
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </header>

@@ -95,7 +95,7 @@ export const sendChatMessage = createServerFn({ method: "POST" })
         .limit(3),
     ]);
     const current = items ?? [];
-    timings.db_lookup_ms = Date.now() - t0;
+    timings["db_lookup_ms"] = Date.now() - t0;
 
     const { error: userErr } = await supabase.from("chat_messages").insert({ move_id: move.id, role: "user", content: data.message });
     if (userErr) console.error("save user message failed", userErr);
@@ -112,7 +112,7 @@ export const sendChatMessage = createServerFn({ method: "POST" })
         matched = chip;
         level = "exact";
         reason = `Selected topic: ${chip.quick_select_label ?? chip.modifier_type}.`;
-        timings.classification_ms = 0;
+        timings["classification_ms"] = 0;
       } else if (modifiers?.length) {
         const tc = Date.now();
         const classify = `You are classifying a user's message about their relocation move against a list of curated, pre-verified topics.
@@ -142,7 +142,7 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
           level = "none";
           reason = "Classification could not be parsed.";
         }
-        timings.classification_ms = Date.now() - tc;
+        timings["classification_ms"] = Date.now() - tc;
       }
 
       const history = (recent ?? []).reverse().map((r) => `${r.role}: ${r.content.slice(0, 400)}`);
@@ -164,7 +164,7 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
 
       const tm = Date.now();
       const parsed = parseJson(await generateTextViaGateway(MODIFY_PROMPT, userMsg, DEFAULT_MODEL, 8000)) as Record<string, unknown> | unknown[];
-      timings.main_generation_ms = Date.now() - tm;
+      timings["main_generation_ms"] = Date.now() - tm;
       const obj: Record<string, unknown> = Array.isArray(parsed) ? { items: parsed } : parsed;
       const delta = normTasks(obj["items"] ?? obj["checklist"]);
       const removedTitles = new Set(
@@ -237,7 +237,7 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
       });
       if (replyErr) console.error("save reply failed", replyErr);
 
-      timings.total_ms = Date.now() - t0;
+      timings["total_ms"] = Date.now() - t0;
       await supabase.from("move_events").insert({
         move_id: move.id,
         event_text: data.message,

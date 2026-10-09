@@ -106,7 +106,7 @@ export const generateChecklist = createServerFn({ method: "POST" })
       );
     }
 
-    timings.db_lookup_ms = Date.now() - t0;
+    timings["db_lookup_ms"] = Date.now() - t0;
 
     try {
       const { generateTextViaGateway, DEFAULT_MODEL } = await import("./ai-gateway.server");
@@ -124,13 +124,13 @@ export const generateChecklist = createServerFn({ method: "POST" })
       let tasks = groups.flat();
       const titles = tasks.map((t) => norm(t.title));
       const duplicates = titles.length - new Set(titles).size;
-      timings.duplicates = duplicates;
+      timings["duplicates"] = duplicates;
       if (duplicates > 0) {
         // Fallback: one call for the whole checklist.
-        timings.fallback_single_call = 1;
+        timings["fallback_single_call"] = 1;
         tasks = parseTasks(await generateTextViaGateway(SYSTEM_PROMPT, context, DEFAULT_MODEL, 16000));
       }
-      timings.main_generation_ms = Date.now() - tm;
+      timings["main_generation_ms"] = Date.now() - tm;
       await supabase.from("checklist_items").delete().eq("move_id", move.id);
       const { error } = await supabase.from("checklist_items").insert(
         tasks.map((t) => {
@@ -144,7 +144,7 @@ export const generateChecklist = createServerFn({ method: "POST" })
         }),
       );
       if (error) throw error;
-      timings.total_ms = Date.now() - t0;
+      timings["total_ms"] = Date.now() - t0;
       await supabase.from("move_events").insert({ move_id: move.id, event_text: "checklist_generation", timings });
       return { ok: true as const };
     } catch (e) {

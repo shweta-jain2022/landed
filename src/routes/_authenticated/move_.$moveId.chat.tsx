@@ -102,7 +102,7 @@ function ChatPage() {
     const target = hash && !scrolledToHash.current ? document.getElementById(`msg-${hash}`) : null;
     if (target) {
       scrolledToHash.current = true;
-      target.scrollIntoView({ block: "center" });
+      target.scrollIntoView({ block: "start" });
     } else if (!hash || scrolledToHash.current) endRef.current?.scrollIntoView({ behavior: "smooth" });
     if (!busy) inputRef.current?.focus();
   }, [history.length, itemRows.length, pending, busy, hash]);

@@ -57,7 +57,35 @@ function ChatPage() {
   const { moveId } = Route.useParams();
   const qc = useQueryClient();
   const send = useServerFn(sendChatMessage);
-  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [pending, setPending] = useState<string | null>(null);
+  const historyKey = ["chat", moveId];
+  const { data: history = [], isLoading: loadingHistory } = useQuery({
+    queryKey: historyKey,
+    queryFn: async () => {
+      const { data } = await supabase.from("chat_messages").select("*").eq("move_id", moveId).order("created_at");
+      return data ?? [];
+    },
+  });
+  const { data: itemRows = [] } = useQuery({
+    queryKey: ["chat-items", moveId],
+    queryFn: async () => {
+      const { data } = await supabase.from("checklist_items").select("id, title, description, change_reason, added_by_message_id").eq("move_id", moveId);
+      return data ?? [];
+    },
+  });
+  const msgs: (Msg & { id: string })[] = history.map((h) =>
+    h.role === "user"
+      ? { id: h.id, role: "user", text: h.content }
+      : h.role === "error"
+        ? { id: h.id, role: "error", text: h.content }
+        : {
+            id: h.id, role: "ai", text: h.content, grounded: h.grounded, matchNote: h.closest_topic,
+            source: h.grounded ? { last_verified: h.source_last_verified, source_links: h.source_links ?? [] } : null,
+            changes: itemRows.filter((i) => i.added_by_message_id === h.id).map((i) => ({ title: i.title, description: i.description, change_reason: i.change_reason })),
+          },
+  );
+  if (pending) msgs.push({ id: "pending", role: "user", text: pending });
+  const hash = typeof window !== "undefined" ? window.location.hash.slice(1) : "";
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,25 +104,34 @@ function ChatPage() {
     },
   });
 
+  const scrolledToHash = useRef(false);
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    const target = hash && !scrolledToHash.current ? document.getElementById(`msg-${hash}`) : null;
+    if (target) {
+      scrolledToHash.current = true;
+      target.scrollIntoView({ block: "center" });
+    } else if (!hash || scrolledToHash.current) endRef.current?.scrollIntoView({ behavior: "smooth" });
     if (!busy) inputRef.current?.focus();
-  }, [msgs, busy]);
+  }, [history.length, itemRows.length, pending, busy, hash]);
 
   async function submit(message: string) {
     const m = message.trim();
     if (!m || busy) return;
     setText("");
     setBusy(true);
-    setMsgs((x) => [...x, { role: "user", text: m }]);
+    setPending(m);
+    scrolledToHash.current = true;
     try {
-      const r = await send({ data: { moveId, message: m } });
-      if (!r.ok) throw new Error();
-      setMsgs((x) => [...x, { role: "ai", text: r.response, grounded: r.grounded, matchNote: r.matchNote, source: r.source, changes: r.changes }]);
-      if (r.changes.length) qc.invalidateQueries({ queryKey: ["move", moveId] });
+      await send({ data: { moveId, message: m } });
     } catch {
-      setMsgs((x) => [...x, { role: "error", text: "Something went wrong, please try again." }]);
+      // the server saves its own error row when it can
     } finally {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: historyKey }),
+        qc.invalidateQueries({ queryKey: ["chat-items", moveId] }),
+        qc.invalidateQueries({ queryKey: ["move", moveId] }),
+      ]);
+      setPending(null);
       setBusy(false);
     }
   }
@@ -124,18 +161,18 @@ function ChatPage() {
       </header>
 
       <div className="mx-auto mt-8 w-full max-w-xl flex-1 space-y-5">
-        {msgs.length === 0 && (
+        {!loadingHistory && msgs.length === 0 && (
           <p className="text-sm text-muted-foreground">Tap a topic above or type anything about your move — a question, or a change like "I'm bringing my cat".</p>
         )}
-        {msgs.map((m, i) =>
+        {msgs.map((m) =>
           m.role === "user" ? (
-            <div key={i} className="flex justify-end">
+            <div key={m.id} id={`msg-${m.id}`} className="flex justify-end">
               <p className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground">{m.text}</p>
             </div>
           ) : m.role === "error" ? (
-            <p key={i} className="text-sm text-destructive">{m.text}</p>
+            <p key={m.id} id={`msg-${m.id}`} className="text-sm text-destructive">{m.text}</p>
           ) : (
-            <div key={i} className="max-w-[90%] space-y-3">
+            <div key={m.id} id={`msg-${m.id}`} className={cn("max-w-[90%] space-y-3 rounded-2xl", hash === m.id && "ring-2 ring-primary/40 ring-offset-4 ring-offset-background")}>
               <div className="rounded-2xl rounded-bl-md border bg-card px-4 py-3 shadow-soft">
                 <p className="whitespace-pre-wrap">{m.text}</p>
                 <div className="mt-3"><Tag grounded={m.grounded} source={m.source} /></div>

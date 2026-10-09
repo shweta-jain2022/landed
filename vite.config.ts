@@ -12,4 +12,8 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    // Pre-bundle so a late re-optimization doesn't load two React copies.
+    optimizeDeps: { include: ["@radix-ui/react-collapsible"] },
+  },
 });

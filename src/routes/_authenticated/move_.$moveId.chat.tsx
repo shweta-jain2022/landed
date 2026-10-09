@@ -148,18 +148,21 @@ function ChatPage() {
         </Link>
         <h1 className="mt-8 text-3xl font-semibold">Ask or update your move</h1>
         {chips.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-2">
-            {chips.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                disabled={busy}
-                onClick={() => submit(c.quick_select_label ?? "", c.id)}
-                className="rounded-full border bg-card px-3.5 py-1.5 text-sm shadow-soft transition-colors hover:border-primary/50 disabled:opacity-50"
-              >
-                {c.quick_select_label}
-              </button>
-            ))}
+          <div className="mt-5 space-y-2">
+            {chips[0]?.generic && <p className="text-xs font-medium tracking-wide text-muted-foreground">Try asking</p>}
+            <div className="flex flex-wrap gap-2">
+              {chips.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => submit(c.label, c.generic ? undefined : c.id)}
+                  className="rounded-full border bg-card px-3.5 py-1.5 text-sm shadow-soft transition-colors hover:border-primary/50 disabled:opacity-50"
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </header>

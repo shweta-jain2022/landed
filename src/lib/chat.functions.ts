@@ -195,6 +195,11 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
         ok: true as const,
         response,
         grounded,
+        matchLevel: level,
+        matchNote:
+          level !== "exact" && matched
+            ? `Closest verified topic: ${matched.quick_select_label ?? matched.modifier_type} (${reason.replace(/\.$/, "")}).`
+            : null,
         source: grounded && matched ? { last_verified: matched.last_verified, source_links: matched.source_links ?? [] } : null,
         changes: changes.map((c) => ({ title: c.title, description: c.description, change_reason: c.change_reason })),
       };

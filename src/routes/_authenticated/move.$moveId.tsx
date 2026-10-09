@@ -33,6 +33,15 @@ const SECTIONS = [
   ["first_90_days", "First 90 days"],
 ] as const;
 
+// Display-only: which divider heading a group sits under. Stored group values,
+// prompts and source_section matching are untouched — this only affects rendering.
+const SECTION_DIVIDER: Record<string, string | null> = {
+  before_arrival: null,
+  first_week: "After Arrival",
+  first_month: "After Arrival",
+  first_90_days: "After Arrival",
+};
+
 function MovePage() {
   const { moveId } = Route.useParams();
   const qc = useQueryClient();
@@ -114,6 +123,20 @@ function MovePage() {
   const summary = `${items.length} items: ${verifiedCount} verified, ${generalCount} general knowledge.`;
   const shown = items.filter((i) => (filter === "all" ? true : filter === "verified" ? i.grounded : !i.grounded));
 
+  // Render the groups in order, opening a divider heading before the first group under it.
+  const blocks: { divider: string | null; sections: { win: string; label: string; list: typeof shown }[] }[] = [];
+  for (const [win, label] of SECTIONS) {
+    const list = shown.filter((i) => i.timing_window === win);
+    if (!list.length) continue;
+    const divider = SECTION_DIVIDER[win] ?? null;
+    let current = blocks[blocks.length - 1];
+    if (!current || current.divider !== divider) {
+      current = { divider, sections: [] };
+      blocks.push(current);
+    }
+    current.sections.push({ win, label, list });
+  }
+
   return (
     <main className="min-h-screen px-6 py-10">
       <header className="mx-auto flex max-w-xl items-center justify-between">
@@ -179,61 +202,64 @@ function MovePage() {
         {err && <p className="mt-4 text-sm text-destructive">{err}</p>}
 
         <div className="mt-10 space-y-10">
-          {SECTIONS.map(([win, label]) => {
-            const list = shown.filter((i) => i.timing_window === win);
-            if (!list.length) return null;
-            return (
-              <section key={win}>
-                <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</h2>
-                <div className="mt-4 space-y-3">
-                  {list.map((i) => {
-                    const isDone = i.status === "done";
-                    return (
-                      <label
-                        key={i.id}
-                        className={cn(
-                          "relative flex cursor-pointer gap-4 rounded-2xl border bg-card p-5 shadow-soft transition-opacity",
-                          !i.grounded && "border-l-2 border-l-unverified",
-                          isDone && "opacity-60",
-                        )}
-                      >
-                        <Checkbox checked={isDone} onCheckedChange={(v) => toggle(i.id, v === true)} className="mt-0.5" />
-                        <div className="min-w-0 flex-1 pr-14">
-                          <p className={cn("font-medium", isDone && "line-through")}>{i.title}</p>
-                          {i.description && <p className="mt-1 text-sm text-muted-foreground">{i.description}</p>}
-                          {!i.grounded && i.added_by_message_id && (
-                            <div className="mt-2 space-y-0.5 text-xs">
-                              <Link
-                                to="/move/$moveId/chat"
-                                params={{ moveId }}
-                                hash={i.added_by_message_id}
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-unverified underline-offset-4 hover:underline"
-                              >
+          {blocks.map((block) => (
+            <div key={block.divider ?? "before"} className="space-y-10">
+              {block.divider && (
+                <h2 className="mt-4 border-b border-border/70 pb-4 text-base font-semibold text-foreground">{block.divider}</h2>
+              )}
+              {block.sections.map(({ win, label, list }) => (
+                <section key={win}>
+                  <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</h2>
+                  <div className="mt-4 space-y-3">
+                    {list.map((i) => {
+                      const isDone = i.status === "done";
+                      return (
+                        <label
+                          key={i.id}
+                          className={cn(
+                            "relative flex cursor-pointer gap-4 rounded-2xl border bg-card p-5 shadow-soft transition-opacity",
+                            !i.grounded && "border-l-2 border-l-unverified",
+                            isDone && "opacity-60",
+                          )}
+                        >
+                          <Checkbox checked={isDone} onCheckedChange={(v) => toggle(i.id, v === true)} className="mt-0.5" />
+                          <div className="min-w-0 flex-1 pr-14">
+                            <p className={cn("font-medium", isDone && "line-through")}>{i.title}</p>
+                            {i.description && <p className="mt-1 text-sm text-muted-foreground">{i.description}</p>}
+                            {!i.grounded && i.added_by_message_id && (
+                              <div className="mt-2 space-y-0.5 text-xs">
+                                <Link
+                                  to="/move/$moveId/chat"
+                                  params={{ moveId }}
+                                  hash={i.added_by_message_id}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-unverified underline-offset-4 hover:underline"
+                                >
+                                  Added because: {i.added_because ?? i.change_reason}
+                                </Link>
+                                <p className="text-muted-foreground">General guidance, confirm with official sources</p>
+                              </div>
+                            )}
+                            {i.grounded && i.added_by_message_id && (
+                              <Link to="/move/$moveId/chat" params={{ moveId }} hash={i.added_by_message_id} onClick={(e) => e.stopPropagation()} className="mt-2 block text-xs text-muted-foreground underline-offset-4 hover:underline">
                                 Added because: {i.added_because ?? i.change_reason}
                               </Link>
-                              <p className="text-muted-foreground">General guidance, confirm with official sources</p>
-                            </div>
+                            )}
+                            <VerifyBadge grounded={i.grounded} small className="mt-3" />
+                          </div>
+                          {i.urgency === "urgent" && (
+                            <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
+                              Urgent
+                            </span>
                           )}
-                          {i.grounded && i.added_by_message_id && (
-                            <Link to="/move/$moveId/chat" params={{ moveId }} hash={i.added_by_message_id} onClick={(e) => e.stopPropagation()} className="mt-2 block text-xs text-muted-foreground underline-offset-4 hover:underline">
-                              Added because: {i.added_because ?? i.change_reason}
-                            </Link>
-                          )}
-                          <VerifyBadge grounded={i.grounded} small className="mt-3" />
-                        </div>
-                        {i.urgency === "urgent" && (
-                          <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
-                            Urgent
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ))}
         </div>
         <Collapsible className="mt-10 border-t pt-4">
           <CollapsibleTrigger asChild>

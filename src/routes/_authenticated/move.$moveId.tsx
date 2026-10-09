@@ -237,7 +237,7 @@ function MovePage() {
         </div>
         <Collapsible className="mt-10 border-t pt-4">
           <CollapsibleTrigger asChild>
-            <Button type="button" variant="ghost" className="h-auto w-full justify-between whitespace-normal px-0 text-left hover:bg-transparent">
+            <Button type="button" variant="ghost" className="h-auto w-full justify-between whitespace-normal px-0 text-left text-foreground hover:bg-transparent hover:text-foreground">
               Sources and last verified
               <ChevronDown className="h-4 w-4 shrink-0" />
             </Button>

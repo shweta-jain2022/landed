@@ -142,16 +142,19 @@ Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":
         "",
         `User's message: "${data.message}"`,
         "",
-        matched
+        level === "exact" && matched
           ? `Verified reference information:\n${matched.content_blob}\nlast_verified: ${matched.last_verified}\nsource_links: ${(matched.source_links ?? []).join(", ")}`
-          : "No verified reference information available for this message -- use general knowledge.",
+          : level === "partial" && matched
+            ? `PARTIAL MATCH -- the closest verified topic is "${matched.quick_select_label ?? matched.modifier_type}", which does NOT cover this request (${reason}). Use the content below only as background, never as a verified answer:\n${matched.content_blob}\n\nYour "response" MUST open by stating this limit, e.g. "Our verified answers cover dogs only. For a parrot, here's general guidance, which is not verified." Keep specific facts conservative.${/pet|animal|dog|cat/i.test(matched.modifier_type + " " + (matched.quick_select_label ?? "")) ? ` Also advise confirming with ${move.destination_country}'s official animal import authority.` : ""}`
+            : "No verified reference information available for this message -- use general knowledge.",
       ].join("\n");
 
       const parsed = parseJson(await generateTextViaGateway(MODIFY_PROMPT, userMsg)) as Record<string, unknown> | unknown[];
       const obj: Record<string, unknown> = Array.isArray(parsed) ? { checklist: parsed } : parsed;
       const listRaw = obj["checklist"] ?? obj["tasks"] ?? obj["items"];
       const next = normTasks(listRaw);
-      const grounded = obj["grounded"] === true && !!matched;
+      // Grounding is decided by code: only an exact curated match counts as verified.
+      const grounded = level === "exact" && !!matched;
       let response = typeof obj["response"] === "string" ? obj["response"] : "";
 
       const before = new Set(current.map(sig));

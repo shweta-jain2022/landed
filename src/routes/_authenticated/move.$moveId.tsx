@@ -33,6 +33,15 @@ const SECTIONS = [
   ["first_90_days", "First 90 days"],
 ] as const;
 
+// Display-only: which divider heading a group sits under. Stored group values,
+// prompts and source_section matching are untouched — this only affects rendering.
+const SECTION_DIVIDER: Record<string, string | null> = {
+  before_arrival: null,
+  first_week: "After Arrival",
+  first_month: "After Arrival",
+  first_90_days: "After Arrival",
+};
+
 function MovePage() {
   const { moveId } = Route.useParams();
   const qc = useQueryClient();
@@ -113,6 +122,20 @@ function MovePage() {
   const generalCount = items.length - verifiedCount;
   const summary = `${items.length} items: ${verifiedCount} verified, ${generalCount} general knowledge.`;
   const shown = items.filter((i) => (filter === "all" ? true : filter === "verified" ? i.grounded : !i.grounded));
+
+  // Render the groups in order, opening a divider heading before the first group under it.
+  const blocks: { divider: string | null; sections: { win: string; label: string; list: typeof shown }[] }[] = [];
+  for (const [win, label] of SECTIONS) {
+    const list = shown.filter((i) => i.timing_window === win);
+    if (!list.length) continue;
+    const divider = SECTION_DIVIDER[win] ?? null;
+    let current = blocks[blocks.length - 1];
+    if (!current || current.divider !== divider) {
+      current = { divider, sections: [] };
+      blocks.push(current);
+    }
+    current.sections.push({ win, label, list });
+  }
 
   return (
     <main className="min-h-screen px-6 py-10">

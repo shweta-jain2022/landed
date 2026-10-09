@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, SendHorizontal, ShieldCheck, Globe, Plus } from "lucide-react";
+import { ArrowLeft, SendHorizontal, Plus } from "lucide-react";
+import { VerifyBadge } from "@/components/VerifyBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { Button } from "@/components/ui/button";
@@ -31,18 +32,10 @@ type Msg =
   | { role: "error"; text: string };
 
 function Tag({ grounded, source, small }: { grounded: boolean; source: Source; small?: boolean }) {
-  const base = cn("inline-flex items-center gap-1.5 rounded-full border font-medium", small ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs");
-  if (!grounded)
-    return (
-      <span className={cn(base, "border-dashed border-muted-foreground/40 bg-muted text-muted-foreground")}>
-        <Globe className="h-3.5 w-3.5" /> General knowledge -- not verified
-      </span>
-    );
+  if (!grounded) return <VerifyBadge grounded={false} small={small} label="General knowledge -- not verified" />;
   return (
     <Popover>
-      <PopoverTrigger className={cn(base, "border-accent bg-accent text-accent-foreground")}>
-        <ShieldCheck className="h-3.5 w-3.5" /> Verified source
-      </PopoverTrigger>
+      <PopoverTrigger><VerifyBadge grounded small={small} label="Verified source" /></PopoverTrigger>
       <PopoverContent className="w-80 space-y-2">
         <p className="text-sm">Last verified {source?.last_verified ?? "—"}</p>
         {(source?.source_links ?? []).map((l) => (
@@ -179,7 +172,7 @@ function ChatPage() {
                 {m.matchNote && <p className="mt-2 text-xs text-muted-foreground">{m.matchNote}</p>}
               </div>
               {m.changes.map((c, j) => (
-                <div key={j} className={cn("rounded-xl border-l-4 bg-card px-4 py-3 shadow-soft", m.grounded ? "border-l-accent" : "border-l-muted-foreground/40")}>
+                <div key={j} className={cn("rounded-xl border-l-4 bg-card px-4 py-3 shadow-soft", m.grounded ? "border-l-verified" : "border-l-unverified")}>
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Plus className="h-3 w-3" /> added because {c.change_reason}</p>
                   <p className="mt-1 font-medium">{c.title}</p>
                   {c.description && <p className="mt-1 text-sm text-muted-foreground">{c.description}</p>}

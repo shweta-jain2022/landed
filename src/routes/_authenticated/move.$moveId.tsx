@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, ShieldCheck, Info, MessageCircle } from "lucide-react";
+import { VerifyBadge } from "@/components/VerifyBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -57,6 +58,7 @@ function MovePage() {
     },
   });
   const [err, setErr] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "verified" | "unverified">("all");
 
   async function toggle(id: string, done: boolean) {
     const status = done ? "done" : "todo";
@@ -77,6 +79,16 @@ function MovePage() {
   const { move, items, corridor } = data;
   const done = items.filter((i) => i.status === "done").length;
   const pct = items.length ? Math.round((done / items.length) * 100) : 0;
+  const verifiedCount = items.filter((i) => i.grounded).length;
+  const generalCount = items.length - verifiedCount;
+  const summary = !items.length
+    ? "No items yet."
+    : verifiedCount === items.length
+      ? `All ${items.length} items verified.`
+      : verifiedCount === 0
+        ? `${items.length} items: none verified, all general knowledge.`
+        : `${items.length} items: ${verifiedCount} verified, ${generalCount} general knowledge`;
+  const shown = items.filter((i) => (filter === "all" ? true : filter === "verified" ? i.grounded : !i.grounded));
 
   return (
     <main className="min-h-screen px-6 py-10">
@@ -106,31 +118,42 @@ function MovePage() {
           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
         </div>
 
-        {corridor ? (
-          <Popover>
-            <PopoverTrigger className="mt-5 flex items-center gap-2 text-left text-sm text-primary underline-offset-4 hover:underline">
-              <ShieldCheck className="h-4 w-4 shrink-0" />
-              Checklist grounded in verified info, last checked {corridor.last_verified}
-            </PopoverTrigger>
-            <PopoverContent className="w-80 space-y-2">
-              <p className="text-sm font-medium">Sources</p>
-              {(corridor.source_links ?? []).map((l) => (
-                <a key={l} href={l} target="_blank" rel="noreferrer" className="block break-all text-sm text-primary hover:underline">{l}</a>
-              ))}
-            </PopoverContent>
-          </Popover>
-        ) : (
-          <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
-            <Info className="h-4 w-4 shrink-0" />
-            General guidance for this route -- not yet verified. Always confirm with official sources.
-          </p>
-        )}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          {corridor && verifiedCount > 0 ? (
+            <Popover>
+              <PopoverTrigger className="flex items-center gap-2 text-left text-sm text-verified underline-offset-4 hover:underline">
+                <ShieldCheck className="h-4 w-4 shrink-0" /> {summary}
+              </PopoverTrigger>
+              <PopoverContent className="w-80 space-y-2">
+                <p className="text-sm font-medium">Sources (last checked {corridor.last_verified})</p>
+                {(corridor.source_links ?? []).map((l) => (
+                  <a key={l} href={l} target="_blank" rel="noreferrer" className="block break-all text-sm text-primary hover:underline">{l}</a>
+                ))}
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground"><Info className="h-4 w-4 shrink-0" /> {summary}</p>
+          )}
+          <div role="group" aria-label="Filter items" className="flex rounded-full border bg-card p-0.5 text-xs shadow-soft">
+            {([["all", "All"], ["verified", "Verified only"], ["unverified", "Not verified"]] as const).map(([v, l]) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={filter === v}
+                onClick={() => setFilter(v)}
+                className={cn("rounded-full px-3 py-1 font-medium transition-colors", filter === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {err && <p className="mt-4 text-sm text-destructive">{err}</p>}
 
         <div className="mt-10 space-y-10">
           {SECTIONS.map(([win, label]) => {
-            const list = items.filter((i) => i.timing_window === win);
+            const list = shown.filter((i) => i.timing_window === win);
             if (!list.length) return null;
             return (
               <section key={win}>
@@ -143,6 +166,7 @@ function MovePage() {
                         key={i.id}
                         className={cn(
                           "relative flex cursor-pointer gap-4 rounded-2xl border bg-card p-5 shadow-soft transition-opacity",
+                          !i.grounded && "border-l-2 border-l-unverified",
                           isDone && "opacity-60",
                         )}
                       >
@@ -150,6 +174,26 @@ function MovePage() {
                         <div className="min-w-0 flex-1 pr-14">
                           <p className={cn("font-medium", isDone && "line-through")}>{i.title}</p>
                           {i.description && <p className="mt-1 text-sm text-muted-foreground">{i.description}</p>}
+                          {!i.grounded && i.added_by_message_id && (
+                            <div className="mt-2 space-y-0.5 text-xs">
+                              <Link
+                                to="/move/$moveId/chat"
+                                params={{ moveId }}
+                                hash={i.added_by_message_id}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-unverified underline-offset-4 hover:underline"
+                              >
+                                Added because: {i.added_because ?? i.change_reason}
+                              </Link>
+                              <p className="text-muted-foreground">General guidance, confirm with official sources</p>
+                            </div>
+                          )}
+                          {i.grounded && i.added_by_message_id && (
+                            <Link to="/move/$moveId/chat" params={{ moveId }} hash={i.added_by_message_id} onClick={(e) => e.stopPropagation()} className="mt-2 block text-xs text-muted-foreground underline-offset-4 hover:underline">
+                              Added because: {i.added_because ?? i.change_reason}
+                            </Link>
+                          )}
+                          <VerifyBadge grounded={i.grounded} small className="mt-3" />
                         </div>
                         {i.urgency === "urgent" && (
                           <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">

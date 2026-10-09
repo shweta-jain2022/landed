@@ -27,6 +27,7 @@ export async function generateTextViaGateway(
   instructions: string,
   userMessage: string,
   model: string = DEFAULT_MODEL,
+  maxOutputTokens?: number,
 ) {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new AiGatewayError("AI is not configured", 401);
@@ -42,6 +43,7 @@ export async function generateTextViaGateway(
     instructions,
     messages: [{ role: "user", content: userMessage }],
     maxRetries: 0,
+    ...(maxOutputTokens ? { maxOutputTokens } : {}),
     onError: ({ error }) => {
       streamError = error;
     },

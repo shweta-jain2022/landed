@@ -107,7 +107,7 @@ function ChatPage() {
     if (!busy) inputRef.current?.focus();
   }, [history.length, itemRows.length, pending, busy, hash]);
 
-  async function submit(message: string) {
+  async function submit(message: string, modifierId?: string) {
     const m = message.trim();
     if (!m || busy) return;
     setText("");
@@ -115,7 +115,7 @@ function ChatPage() {
     setPending(m);
     scrolledToHash.current = true;
     try {
-      await send({ data: { moveId, message: m } });
+      await send({ data: { moveId, message: m, modifierId } });
     } catch {
       // the server saves its own error row when it can
     } finally {
@@ -143,7 +143,7 @@ function ChatPage() {
                 key={c.id}
                 type="button"
                 disabled={busy}
-                onClick={() => submit(c.quick_select_label ?? "")}
+                onClick={() => submit(c.quick_select_label ?? "", c.id)}
                 className="rounded-full border bg-card px-3.5 py-1.5 text-sm shadow-soft transition-colors hover:border-primary/50 disabled:opacity-50"
               >
                 {c.quick_select_label}

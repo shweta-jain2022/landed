@@ -1,0 +1,1 @@
+ALTER TABLE public.move_events ADD COLUMN IF NOT EXISTS timings jsonb;

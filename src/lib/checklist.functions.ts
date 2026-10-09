@@ -71,6 +71,8 @@ export const generateChecklist = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ moveId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const t0 = Date.now();
+    const timings: Record<string, number> = {};
     const { data: move } = await supabase.from("moves").select("*").eq("id", data.moveId).maybeSingle();
     if (!move) return { ok: false as const };
 
@@ -104,10 +106,31 @@ export const generateChecklist = createServerFn({ method: "POST" })
       );
     }
 
+    timings["db_lookup_ms"] = Date.now() - t0;
+
     try {
-      const { generateTextViaGateway } = await import("./ai-gateway.server");
-      const text = await generateTextViaGateway(SYSTEM_PROMPT, lines.join("\n"));
-      const tasks = parseTasks(text);
+      const { generateTextViaGateway, DEFAULT_MODEL } = await import("./ai-gateway.server");
+      const context = lines.join("\n");
+      const tm = Date.now();
+      // Four timing groups generated concurrently, merged in window order.
+      const groups = await Promise.all(
+        WINDOWS.map(async (w) => {
+          const others = WINDOWS.filter((x) => x !== w).join(", ");
+          const scope = `\n\nFor this request, generate ONLY the tasks for the "${w}" timing window: 5-7 tasks, all with timing_window "${w}". The other windows (${others}) are generated separately -- do not include tasks that belong there or repeat their items. Return the JSON array for "${w}" only.`;
+          const text = await generateTextViaGateway(SYSTEM_PROMPT + scope, context, DEFAULT_MODEL, 8000);
+          return parseTasks(text).filter((t) => t.timing_window === w);
+        }),
+      );
+      let tasks = groups.flat();
+      const titles = tasks.map((t) => norm(t.title));
+      const duplicates = titles.length - new Set(titles).size;
+      timings["duplicates"] = duplicates;
+      if (duplicates > 0) {
+        // Fallback: one call for the whole checklist.
+        timings["fallback_single_call"] = 1;
+        tasks = parseTasks(await generateTextViaGateway(SYSTEM_PROMPT, context, DEFAULT_MODEL, 16000));
+      }
+      timings["main_generation_ms"] = Date.now() - tm;
       await supabase.from("checklist_items").delete().eq("move_id", move.id);
       const { error } = await supabase.from("checklist_items").insert(
         tasks.map((t) => {
@@ -121,6 +144,8 @@ export const generateChecklist = createServerFn({ method: "POST" })
         }),
       );
       if (error) throw error;
+      timings["total_ms"] = Date.now() - t0;
+      await supabase.from("move_events").insert({ move_id: move.id, event_text: "checklist_generation", timings });
       return { ok: true as const };
     } catch (e) {
       console.error("checklist generation failed", e);

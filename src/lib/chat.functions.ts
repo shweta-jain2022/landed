@@ -72,8 +72,6 @@ export const sendChatMessage = createServerFn({ method: "POST" })
     const { data: move } = await supabase.from("moves").select("*").eq("id", data.moveId).maybeSingle();
     if (!move) return { ok: false as const };
 
-    await supabase.from("move_events").insert({ move_id: move.id, event_text: data.message });
-
     const [{ data: modifiers }, { data: items }] = await Promise.all([
       supabase
         .from("modifier_knowledge")
@@ -87,24 +85,46 @@ export const sendChatMessage = createServerFn({ method: "POST" })
       const { generateTextViaGateway } = await import("./ai-gateway.server");
 
       let matched: NonNullable<typeof modifiers>[number] | null = null;
+      let level: "exact" | "partial" | "none" = "none";
+      let reason = "No curated topics exist for this destination.";
       if (modifiers?.length) {
-        const classify = `You are classifying a user's message about their relocation move against 
-a list of known, pre-verified topics. 
+        const classify = `You are classifying a user's message about their relocation move against a list of curated, pre-verified topics.
 
-Known topics for this destination: ${modifiers.map((m) => `${m.modifier_type} ("${m.quick_select_label}")`).join("; ")}
+Curated topics for this destination (modifier_type: label -- content):
+${modifiers.map((m) => `- ${m.modifier_type}: "${m.quick_select_label ?? ""}" -- ${(m.content_blob ?? "").slice(0, 400)}`).join("\n")}
 
 User's message: "${data.message}"
 
-Does this message clearly match one of the known topics above, even if 
-worded differently (e.g. "bringing my cat" or "I have a pet" should 
-match a topic about pet import; "my husband" or "wife" should match a 
-topic about a spouse)? Respond with ONLY the matching modifier_type 
-string if there's a clear match, or the word NONE if it doesn't clearly 
-match any of them. Don't guess if it's ambiguous -- prefer NONE over a 
-weak match.`;
-        const label = (await generateTextViaGateway("Follow the instructions exactly.", classify)).trim();
-        matched = modifiers.find((m) => m.modifier_type === label) ?? null;
+Return one match level:
+- exact: the request is fully covered by a curated topic's scope (e.g. "bringing my husky" matches a dog topic; "my wife is coming later" matches a spouse topic).
+- partial: related to a curated topic but not covered by it (e.g. a parrot or cat vs. a dog-only entry; a parent joining vs. a spouse-only entry).
+- none: no curated topic is relevant.
+
+Match on the specific subject, not just the general category. A different animal, relative type, or item category is partial at best. When unsure, choose partial or none, never exact.
+
+Respond ONLY with JSON: {"match_level":"exact"|"partial"|"none","modifier_type":"<closest modifier_type or empty string>","reason":"<one sentence>"}`;
+        try {
+          const c = parseJson(await generateTextViaGateway("Follow the instructions exactly.", classify)) as Record<string, unknown>;
+          const lv = c["match_level"];
+          const m = modifiers.find((x) => x.modifier_type === c["modifier_type"]) ?? null;
+          level = lv === "exact" || lv === "partial" ? lv : "none";
+          if (!m) level = "none";
+          matched = level === "none" ? null : m;
+          reason = typeof c["reason"] === "string" ? c["reason"] : "";
+        } catch {
+          level = "none";
+          reason = "Classification could not be parsed.";
+        }
       }
+
+      await supabase.from("move_events").insert({
+        move_id: move.id,
+        event_text: data.message,
+        match_level: level,
+        match_reason: reason,
+        matched_modifier: matched?.modifier_type ?? null,
+      });
+
 
       const userMsg = [
         `Move details: origin_country: ${move.origin_country}; destination_country: ${move.destination_country}; move_type: ${move.move_type}; visa_type: ${move.visa_type ?? "unknown"}; target_date: ${move.target_date}`,
@@ -122,16 +142,19 @@ weak match.`;
         "",
         `User's message: "${data.message}"`,
         "",
-        matched
+        level === "exact" && matched
           ? `Verified reference information:\n${matched.content_blob}\nlast_verified: ${matched.last_verified}\nsource_links: ${(matched.source_links ?? []).join(", ")}`
-          : "No verified reference information available for this message -- use general knowledge.",
+          : level === "partial" && matched
+            ? `PARTIAL MATCH -- the closest verified topic is "${matched.quick_select_label ?? matched.modifier_type}", which does NOT cover this request (${reason}). Use the content below only as background, never as a verified answer:\n${matched.content_blob}\n\nYour "response" MUST open by stating this limit, e.g. "Our verified answers cover dogs only. For a parrot, here's general guidance, which is not verified." Keep specific facts conservative.${/pet|animal|dog|cat/i.test(matched.modifier_type + " " + (matched.quick_select_label ?? "")) ? ` Also advise confirming with ${move.destination_country}'s official animal import authority.` : ""}`
+            : "No verified reference information available for this message -- use general knowledge.",
       ].join("\n");
 
       const parsed = parseJson(await generateTextViaGateway(MODIFY_PROMPT, userMsg)) as Record<string, unknown> | unknown[];
       const obj: Record<string, unknown> = Array.isArray(parsed) ? { checklist: parsed } : parsed;
       const listRaw = obj["checklist"] ?? obj["tasks"] ?? obj["items"];
       const next = normTasks(listRaw);
-      const grounded = obj["grounded"] === true && !!matched;
+      // Grounding is decided by code: only an exact curated match counts as verified.
+      const grounded = level === "exact" && !!matched;
       let response = typeof obj["response"] === "string" ? obj["response"] : "";
 
       const before = new Set(current.map(sig));
@@ -172,6 +195,11 @@ weak match.`;
         ok: true as const,
         response,
         grounded,
+        matchLevel: level,
+        matchNote:
+          level !== "exact" && matched
+            ? `Closest verified topic: ${matched.quick_select_label ?? matched.modifier_type} (${reason.replace(/\.$/, "")}).`
+            : null,
         source: grounded && matched ? { last_verified: matched.last_verified, source_links: matched.source_links ?? [] } : null,
         changes: changes.map((c) => ({ title: c.title, description: c.description, change_reason: c.change_reason })),
       };

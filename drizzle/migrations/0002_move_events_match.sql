@@ -1,0 +1,1 @@
+ALTER TABLE public.move_events ADD COLUMN match_level text, ADD COLUMN match_reason text, ADD COLUMN matched_modifier text;

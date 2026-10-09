@@ -138,18 +138,27 @@ export type Database = {
           created_at: string
           event_text: string
           id: string
+          match_level: string | null
+          match_reason: string | null
+          matched_modifier: string | null
           move_id: string
         }
         Insert: {
           created_at?: string
           event_text: string
           id?: string
+          match_level?: string | null
+          match_reason?: string | null
+          matched_modifier?: string | null
           move_id: string
         }
         Update: {
           created_at?: string
           event_text?: string
           id?: string
+          match_level?: string | null
+          match_reason?: string | null
+          matched_modifier?: string | null
           move_id?: string
         }
         Relationships: [

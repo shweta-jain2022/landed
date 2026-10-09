@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/move_/$moveId/chat")({
 type Source = { last_verified: string | null; source_links: string[] } | null;
 type Msg =
   | { role: "user"; text: string }
-  | { role: "ai"; text: string; grounded: boolean; source: Source; changes: { title: string; description: string | null; change_reason: string | null }[] }
+  | { role: "ai"; text: string; grounded: boolean; matchNote: string | null; source: Source; changes: { title: string; description: string | null; change_reason: string | null }[] }
   | { role: "error"; text: string };
 
 function Tag({ grounded, source, small }: { grounded: boolean; source: Source; small?: boolean }) {
@@ -90,7 +90,7 @@ function ChatPage() {
     try {
       const r = await send({ data: { moveId, message: m } });
       if (!r.ok) throw new Error();
-      setMsgs((x) => [...x, { role: "ai", text: r.response, grounded: r.grounded, source: r.source, changes: r.changes }]);
+      setMsgs((x) => [...x, { role: "ai", text: r.response, grounded: r.grounded, matchNote: r.matchNote, source: r.source, changes: r.changes }]);
       if (r.changes.length) qc.invalidateQueries({ queryKey: ["move", moveId] });
     } catch {
       setMsgs((x) => [...x, { role: "error", text: "Something went wrong, please try again." }]);
@@ -139,6 +139,7 @@ function ChatPage() {
               <div className="rounded-2xl rounded-bl-md border bg-card px-4 py-3 shadow-soft">
                 <p className="whitespace-pre-wrap">{m.text}</p>
                 <div className="mt-3"><Tag grounded={m.grounded} source={m.source} /></div>
+                {m.matchNote && <p className="mt-2 text-xs text-muted-foreground">{m.matchNote}</p>}
               </div>
               {m.changes.map((c, j) => (
                 <div key={j} className={cn("rounded-xl border-l-4 bg-card px-4 py-3 shadow-soft", m.grounded ? "border-l-accent" : "border-l-muted-foreground/40")}>

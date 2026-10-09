@@ -15,6 +15,13 @@
       "when": 1791272897535,
       "tag": "0001_add_checklist_urgency",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791524435571,
+      "tag": "0002_move_events_match",
+      "breakpoints": true
     }
   ]
 }

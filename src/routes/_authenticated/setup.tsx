@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Briefcase, GraduationCap, CheckCircle2, ArrowLeft } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { generateChecklist } from "@/lib/checklist.functions";
@@ -9,6 +9,7 @@ import { normalizeCountries } from "@/lib/country.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/setup")({
@@ -27,6 +28,15 @@ export const Route = createFileRoute("/_authenticated/setup")({
 
 type MoveType = "work" | "study";
 
+const routeKey = (origin: string, destination: string, moveType: string) => `${origin}|${destination}|${moveType}`;
+
+// A target date about 90 days out, built from local parts so the day never shifts.
+function soonDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 90);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function SetupPage() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
@@ -42,6 +52,31 @@ function SetupPage() {
   const generate = useServerFn(generateChecklist);
   const normalize = useServerFn(normalizeCountries);
   const [fieldErr, setFieldErr] = useState<{ origin?: string | undefined; destination?: string | undefined }>({});
+
+  // Options come from the curated corridor rows themselves — nothing hardcoded.
+  const { data: corridors = [] } = useQuery({
+    queryKey: ["corridor-routes"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("corridor_knowledge")
+        .select("origin_country, destination_country, move_type")
+        .order("origin_country")
+        .order("destination_country")
+        .order("move_type");
+      return data ?? [];
+    },
+  });
+
+  function pickRoute(value: string) {
+    const route = corridors.find((c) => routeKey(c.origin_country, c.destination_country, c.move_type) === value);
+    if (!route) return;
+    setOrigin(route.origin_country);
+    setDestination(route.destination_country);
+    setMoveType(route.move_type === "study" ? "study" : "work");
+    setFieldErr({});
+    setMoveId(null);
+    if (!targetDate) setTargetDate(soonDate());
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -139,6 +174,29 @@ function SetupPage() {
             <p className="mt-3 text-muted-foreground">We'll build your personal move checklist.</p>
 
             <form onSubmit={submit} className="mt-10 space-y-8">
+              {corridors.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="curated-route">Try a curated route</Label>
+                  <Select onValueChange={pickRoute}>
+                    <SelectTrigger id="curated-route" className="h-12 rounded-xl bg-card text-base">
+                      <SelectValue placeholder="Choose a route with verified guidance" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {corridors.map((c) => {
+                        const value = routeKey(c.origin_country, c.destination_country, c.move_type);
+                        return (
+                          <SelectItem key={value} value={value}>
+                            {c.origin_country} → {c.destination_country} · {c.move_type === "study" ? "Study" : "Work"}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Or enter any route below. Routes without curated guidance still get a checklist, labeled General knowledge.
+                  </p>
+                </div>
+              )}
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="origin">Moving from</Label>

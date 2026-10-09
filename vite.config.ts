@@ -14,6 +14,6 @@ export default defineConfig({
   },
   vite: {
     // Pre-bundle so a late re-optimization doesn't load two React copies.
-    optimizeDeps: { include: ["@radix-ui/react-collapsible"] },
+    optimizeDeps: { include: ["@radix-ui/react-collapsible", "@radix-ui/react-select"] },
   },
 });

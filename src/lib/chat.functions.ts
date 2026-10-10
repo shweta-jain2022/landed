@@ -98,6 +98,7 @@ export const sendChatMessage = createServerFn({ method: "POST" })
     timings["db_lookup_ms"] = Date.now() - t0;
 
     const { error: userErr } = await supabase.from("chat_messages").insert({ move_id: move.id, role: "user", content: data.message });
+    if (userErr?.message?.includes("GUEST_CHAT_LIMIT")) return { ok: false as const, limit: "chat" as const };
     if (userErr) console.error("save user message failed", userErr);
 
     try {

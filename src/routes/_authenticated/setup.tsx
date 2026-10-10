@@ -49,6 +49,7 @@ function SetupPage() {
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
   const [moveId, setMoveId] = useState<string | null>(null);
+  const [limitHit, setLimitHit] = useState(false);
   const generate = useServerFn(generateChecklist);
   const normalize = useServerFn(normalizeCountries);
   const [fieldErr, setFieldErr] = useState<{ origin?: string | undefined; destination?: string | undefined }>({});
@@ -118,6 +119,10 @@ function SetupPage() {
         visa_type: corridor?.default_visa_type ?? null,
         target_date: targetDate,
       }).select("id").single();
+      if (error?.message?.includes("GUEST_MOVE_LIMIT")) {
+        setLoading(false);
+        return setLimitHit(true);
+      }
       if (error || !inserted) {
         setLoading(false);
         return setError(error?.message ?? "Couldn't save your move.");
@@ -239,7 +244,13 @@ function SetupPage() {
                 <Input id="date" type="date" required value={targetDate} onChange={(e) => { setTargetDate(e.target.value); setMoveId(null); }} className="h-12 rounded-xl bg-card" />
               </div>
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {limitHit && (
+            <div className="rounded-2xl border bg-card p-5 text-center shadow-soft">
+              <p className="text-sm">You’ve reached the limit of 5 moves for guest accounts. Delete an older move to start a new one.</p>
+              <Button asChild type="button" className="mt-4 rounded-full"><Link to="/moves">My moves</Link></Button>
+            </div>
+          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
               <div className="text-center">
                 <Button type="submit" size="lg" disabled={loading} className="h-12 w-full rounded-xl">

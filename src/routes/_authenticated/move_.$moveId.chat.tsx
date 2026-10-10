@@ -61,6 +61,18 @@ function ChatPage() {
       return data ?? [];
     },
   });
+  const { user } = Route.useRouteContext();
+  const isGuest = !!user.is_anonymous;
+  const { data: moveCount = 0 } = useQuery({
+    queryKey: ["guest-move-count"],
+    enabled: isGuest,
+    queryFn: async () => {
+      const { count } = await supabase.from("moves").select("id", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
+  const chatLimited = isGuest && history.filter((h) => h.role === "user" || h.role === "assistant").length >= 30;
+  const movesFull = isGuest && moveCount >= 5;
   const { data: itemRows = [] } = useQuery({
     queryKey: ["chat-items", moveId],
     queryFn: async () => {
@@ -205,6 +217,21 @@ function ChatPage() {
         <div ref={endRef} />
       </div>
 
+      {chatLimited ? (
+        <div className="mx-auto mt-6 w-full max-w-xl rounded-2xl border bg-card p-5 text-center shadow-soft">
+          {movesFull ? (
+            <>
+              <p className="text-sm">You’ve reached the limit of 5 moves for guest accounts. Delete an older move to start a new one.</p>
+              <Button asChild className="mt-4 rounded-full"><Link to="/moves">My moves</Link></Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm">This move has reached the chat limit. Start a new move to keep going.</p>
+              <Button asChild className="mt-4 rounded-full"><Link to="/setup"><Plus className="h-4 w-4" /> New move</Link></Button>
+            </>
+          )}
+        </div>
+      ) : (
       <form
         onSubmit={(e) => { e.preventDefault(); submit(text); }}
         className="sticky bottom-4 mx-auto mt-6 flex w-full max-w-xl gap-2 rounded-2xl border bg-card p-2 shadow-soft"
@@ -212,6 +239,7 @@ function ChatPage() {
         <Input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a question or change…" className="border-0 shadow-none focus-visible:ring-0" />
         <Button type="submit" size="icon" disabled={busy || !text.trim()} aria-label="Send"><SendHorizontal className="h-4 w-4" /></Button>
       </form>
+      )}
       <div className="mx-auto mt-3 w-full max-w-xl">
         <LabelLegend />
       </div>

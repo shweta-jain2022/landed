@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { landingState } from "@/lib/landing-redirect";
 
 export const Route = createFileRoute("/")({
   head: () => ({

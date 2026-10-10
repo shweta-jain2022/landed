@@ -253,6 +253,7 @@ export type Database = {
           move_type: string
           origin_country: string
           target_date: string
+          title: string | null
           user_id: string
           visa_type: string | null
         }
@@ -263,6 +264,7 @@ export type Database = {
           move_type: string
           origin_country: string
           target_date: string
+          title?: string | null
           user_id: string
           visa_type?: string | null
         }
@@ -273,6 +275,7 @@ export type Database = {
           move_type?: string
           origin_country?: string
           target_date?: string
+          title?: string | null
           user_id?: string
           visa_type?: string | null
         }

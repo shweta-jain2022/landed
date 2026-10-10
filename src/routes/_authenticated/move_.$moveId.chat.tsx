@@ -145,9 +145,12 @@ function ChatPage() {
   return (
     <main className="flex min-h-screen flex-col px-6 py-10">
       <header className="mx-auto w-full max-w-xl">
-        <Link to="/move/$moveId" params={{ moveId }} className="flex w-fit items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back to checklist
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link to="/move/$moveId" params={{ moveId }} className="flex w-fit items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" /> Back to checklist
+          </Link>
+          <Link to="/moves" className="text-sm text-muted-foreground hover:text-foreground">My moves</Link>
+        </div>
         <h1 className="mt-8 text-3xl font-semibold">Ask or update your move</h1>
         {chips.length > 0 && (
           <div className="mt-5 space-y-2">

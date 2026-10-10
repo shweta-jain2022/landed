@@ -1,0 +1,1 @@
+ALTER TABLE public.moves ADD COLUMN IF NOT EXISTS title text;

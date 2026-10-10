@@ -37,7 +37,7 @@ function AuthPage() {
         : await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) setError(error.message);
-    else navigate({ to: "/setup" });
+    else navigate({ to: "/moves" });
   }
 
   return (

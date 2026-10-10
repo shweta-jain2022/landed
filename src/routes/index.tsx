@@ -21,8 +21,17 @@ function Index() {
   const navigate = useNavigate();
 
   // Returning user with an existing session: send them to their moves (or
-  // setup if they have none). A count failure falls back to My moves.
+  // setup if they have none). Only on a fresh app load — navigating to "/"
+  // from inside the app (e.g. the "Landed" back button on My moves) shows the
+  // home page instead of bouncing straight back. A count failure falls back
+  // to My moves.
   useEffect(() => {
+    // Only on a fresh app load — the router's history index is 0 before any
+    // in-app navigation. Navigating to "/" from inside the app (e.g. the
+    // "Landed" back button on My moves) shows the home page instead of
+    // bouncing straight back. A count failure falls back to My moves.
+    const tsrIndex = (window.history.state as { __TSR_index?: number } | null)?.__TSR_index ?? 0;
+    if (tsrIndex !== 0) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase.auth.getSession();

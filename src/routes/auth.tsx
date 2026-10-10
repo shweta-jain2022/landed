@@ -36,8 +36,16 @@ function AuthPage() {
         ? await supabase.auth.signUp({ email, password })
         : await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) setError(error.message);
-    else navigate({ to: "/moves" });
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    // Zero saved moves → setup; one or more → My moves; count failure → My moves.
+    const { data: moves, error: countError } = await supabase
+      .from("moves")
+      .select("id")
+      .limit(1);
+    navigate({ to: countError ? "/moves" : (moves?.length ?? 0) === 0 ? "/setup" : "/moves" });
   }
 
   return (

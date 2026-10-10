@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedMovesRouteImport } from './routes/_authenticated/moves'
 import { Route as AuthenticatedSetupRouteImport } from './routes/_authenticated/setup'
 import { Route as AuthenticatedMoveMoveIdRouteImport } from './routes/_authenticated/move.$moveId'
 import { Route as AuthenticatedMoveMoveIdChatRouteImport } from './routes/_authenticated/move_.$moveId.chat'
@@ -29,6 +30,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedMovesRoute = AuthenticatedMovesRouteImport.update({
+  id: '/moves',
+  path: '/moves',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSetupRoute = AuthenticatedSetupRouteImport.update({
   id: '/setup',
@@ -50,6 +56,7 @@ const AuthenticatedMoveMoveIdChatRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/moves': typeof AuthenticatedMovesRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/move/$moveId': typeof AuthenticatedMoveMoveIdRoute
   '/move/$moveId/chat': typeof AuthenticatedMoveMoveIdChatRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/moves': typeof AuthenticatedMovesRoute
   '/setup': typeof AuthenticatedSetupRoute
   '/move/$moveId': typeof AuthenticatedMoveMoveIdRoute
   '/move/$moveId/chat': typeof AuthenticatedMoveMoveIdChatRoute
@@ -66,20 +74,24 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/moves': typeof AuthenticatedMovesRoute
   '/_authenticated/setup': typeof AuthenticatedSetupRoute
   '/_authenticated/move/$moveId': typeof AuthenticatedMoveMoveIdRoute
   '/_authenticated/move_/$moveId/chat': typeof AuthenticatedMoveMoveIdChatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/setup' | '/move/$moveId' | '/move/$moveId/chat'
+  fullPaths:
+    '/' | '/auth' | '/moves' | '/setup' | '/move/$moveId' | '/move/$moveId/chat'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/setup' | '/move/$moveId' | '/move/$moveId/chat'
+  to:
+    '/' | '/auth' | '/moves' | '/setup' | '/move/$moveId' | '/move/$moveId/chat'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/moves'
     | '/_authenticated/setup'
     | '/_authenticated/move/$moveId'
     | '/_authenticated/move_/$moveId/chat'
@@ -114,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/moves': {
+      id: '/_authenticated/moves'
+      path: '/moves'
+      fullPath: '/moves'
+      preLoaderRoute: typeof AuthenticatedMovesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/setup': {
       id: '/_authenticated/setup'
       path: '/setup'
@@ -139,12 +158,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedMovesRoute: typeof AuthenticatedMovesRoute
   AuthenticatedSetupRoute: typeof AuthenticatedSetupRoute
   AuthenticatedMoveMoveIdRoute: typeof AuthenticatedMoveMoveIdRoute
   AuthenticatedMoveMoveIdChatRoute: typeof AuthenticatedMoveMoveIdChatRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedMovesRoute: AuthenticatedMovesRoute,
   AuthenticatedSetupRoute: AuthenticatedSetupRoute,
   AuthenticatedMoveMoveIdRoute: AuthenticatedMoveMoveIdRoute,
   AuthenticatedMoveMoveIdChatRoute: AuthenticatedMoveMoveIdChatRoute,

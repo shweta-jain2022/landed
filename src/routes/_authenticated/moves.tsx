@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -33,6 +33,7 @@ const fmt = (d: string) => new Date(d).toLocaleDateString(undefined, { day: "num
 
 function MovesPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [toDelete, setToDelete] = useState<Card | null>(null);
@@ -73,6 +74,13 @@ function MovesPage() {
     qc.invalidateQueries({ queryKey: ["my-moves"] });
   }
 
+  async function signOut() {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
   const newBtn = (
     <Button asChild className="rounded-full"><Link to="/setup"><Plus className="h-4 w-4" /> New move</Link></Button>
   );
@@ -80,9 +88,14 @@ function MovesPage() {
   return (
     <main className="min-h-screen px-6 py-10">
       <div className="mx-auto max-w-xl">
-        <header className="flex items-center justify-between">
+        <header className="flex items-center justify-between gap-3">
           <Link to="/" className="font-display text-lg text-primary">Landed</Link>
-          {moves.length > 0 && newBtn}
+          <div className="flex items-center gap-3">
+            {moves.length > 0 && newBtn}
+            <button onClick={signOut} className="text-sm text-muted-foreground hover:text-foreground">
+              Sign out
+            </button>
+          </div>
         </header>
         <h1 className="mt-8 text-3xl font-semibold">My moves</h1>
 

@@ -17,6 +17,10 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+// True once the entry redirect has run for this page load, so later in-app
+// navigations to "/" render the home page instead of redirecting again.
+let hasLandedOnce = false;
+
 function Index() {
   const navigate = useNavigate();
 

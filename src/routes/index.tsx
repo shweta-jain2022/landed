@@ -29,11 +29,14 @@ function Index() {
   useEffect(() => {
     if (landingState.appMounted) return;
     let cancelled = false;
+    console.log("LANDING-DEBUG effect ran, appMounted:", landingState.appMounted);
     (async () => {
       const { data } = await supabase.auth.getSession();
+      console.log("LANDING-DEBUG session:", !!data.session, "appMounted now:", landingState.appMounted);
       if (cancelled || !data.session) return;
       const { data: moves, error } = await supabase.from("moves").select("id").limit(1);
       if (cancelled) return;
+      console.log("LANDING-DEBUG moves:", moves?.length, "error:", !!error);
       if (error) navigate({ to: "/moves" });
       else navigate({ to: (moves?.length ?? 0) === 0 ? "/setup" : "/moves" });
     })();

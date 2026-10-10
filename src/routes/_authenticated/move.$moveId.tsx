@@ -144,6 +144,7 @@ function MovePage() {
           <ArrowLeft className="h-4 w-4" />
           <span className="font-display text-lg text-primary">Landed</span>
         </Link>
+        <Link to="/moves" className="ml-auto mr-3 text-sm text-muted-foreground hover:text-foreground">My moves</Link>
         <Link
           to="/move/$moveId/chat"
           params={{ moveId }}

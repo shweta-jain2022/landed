@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,8 +55,18 @@ function Index() {
       <p className="mt-4 max-w-md text-muted-foreground">
         A personal checklist for every visa, permit and registration — for work or study.
       </p>
-      <Button asChild size="lg" className="mt-10 rounded-full px-8">
-        <Link to="/setup">Get started</Link>
+      <Button
+        size="lg"
+        className="mt-10 rounded-full px-8"
+        onClick={async () => {
+          const { data } = await supabase.auth.getSession();
+          if (!data.session) return navigate({ to: "/setup" });
+          const { data: moves, error } = await supabase.from("moves").select("id").limit(1);
+          if (error) return navigate({ to: "/moves" });
+          navigate({ to: (moves?.length ?? 0) === 0 ? "/setup" : "/moves" });
+        }}
+      >
+        Get started
       </Button>
     </main>
   );

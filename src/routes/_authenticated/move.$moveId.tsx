@@ -140,7 +140,7 @@ function MovePage() {
   return (
     <main className="min-h-screen px-6 py-10">
       <header className="mx-auto flex max-w-xl items-center justify-between">
-        <Link to="/setup" className="flex w-fit items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <Link to="/moves" className="flex w-fit items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
           <span className="font-display text-lg text-primary">Landed</span>
         </Link>

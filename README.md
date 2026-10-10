@@ -130,11 +130,7 @@ Ideas for what comes next, roughly in priority order. None of these are built ye
 * **Document upload.** Pre-fill details from a visa letter or offer letter (cut from version 1 to keep scope tight).
 * **More ways to move.** Richer support for family, retirement and other situations. Asylum and refugee moves will stay out of scope.
 
-**Speed and polish**
-
-* **Pre-generated checklists** for curated routes, so they load instantly and only chat changes are generated live.
-* **Loading polish.** Skeleton loaders and a typing indicator.
-* **Saved moves screen** with nicknames, progress per move, and rename and delete.
+  
 
 ## Disclaimer
 

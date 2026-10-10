@@ -115,6 +115,7 @@ Ideas for what comes next, roughly in priority order. None of these are built ye
 
 **Trust and coverage**
 
+* **Scalable knowledge base.** Move from hand-pasted guidance to retrieval over reviewed official sources, with per-item passage citations. An agent monitors those sources for changes and proposes updates, which a human approves before they are marked Verified.
 * **More curated routes and topics.** Expand beyond six corridors and two chat-topic destinations, with each row carrying its sources and `last_verified` date.
 * **Rule-change monitoring.** Flag routes where rules are shifting (for example the H-1B and F-1 routes) and prompt re-verification when sources change, so verified content doesn't quietly go stale.
 * **Source citations per item.** Show exactly which official page supports each verified item, not only a per-route sources list.

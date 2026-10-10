@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { landingState } from "@/lib/landing-redirect";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,16 +26,18 @@ function Index() {
   // home page instead of bouncing straight back. A count failure falls back
   // to My moves.
   useEffect(() => {
-    if (landingState.appMounted) return;
+    // Only on a fresh app load — the router's history index is 0 before any
+    // in-app navigation. Navigating to "/" from inside the app (e.g. the
+    // "Landed" back button on My moves) shows the home page instead of
+    // bouncing straight back. A count failure falls back to My moves.
+    const tsrIndex = (window.history.state as { __TSR_index?: number } | null)?.__TSR_index ?? 0;
+    if (tsrIndex !== 0) return;
     let cancelled = false;
-    console.log("LANDING-DEBUG effect ran, appMounted:", landingState.appMounted);
     (async () => {
       const { data } = await supabase.auth.getSession();
-      console.log("LANDING-DEBUG session:", !!data.session, "appMounted now:", landingState.appMounted);
       if (cancelled || !data.session) return;
       const { data: moves, error } = await supabase.from("moves").select("id").limit(1);
       if (cancelled) return;
-      console.log("LANDING-DEBUG moves:", moves?.length, "error:", !!error);
       if (error) navigate({ to: "/moves" });
       else navigate({ to: (moves?.length ?? 0) === 0 ? "/setup" : "/moves" });
     })();

@@ -122,10 +122,6 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    // Mark the app as mounted: child routes' effects run before this one, so
-    // the index route's first-load redirect still fires on a fresh load, while
-    // later in-app navigations to "/" skip it.
-    landingState.appMounted = true;
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();

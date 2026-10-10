@@ -18,6 +18,25 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const navigate = useNavigate();
+
+  // Returning user with an existing session: send them to their moves (or
+  // setup if they have none). A count failure falls back to My moves.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled || !data.session) return;
+      const { data: moves, error } = await supabase.from("moves").select("id").limit(1);
+      if (cancelled) return;
+      if (error) navigate({ to: "/moves" });
+      else navigate({ to: (moves?.length ?? 0) === 0 ? "/setup" : "/moves" });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
       <span className="font-display text-4xl font-bold tracking-tight text-primary sm:text-5xl">Landed</span>

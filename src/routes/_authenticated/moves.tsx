@@ -37,6 +37,7 @@ function MovesPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [toDelete, setToDelete] = useState<Card | null>(null);
+  const { user } = Route.useRouteContext();
 
   const { data: moves = [], isLoading } = useQuery({
     queryKey: ["my-moves"],
@@ -98,6 +99,9 @@ function MovesPage() {
           </div>
         </header>
         <h1 className="mt-8 text-3xl font-semibold">My moves</h1>
+        {user.is_anonymous && !isLoading && (
+          <p className="mt-1 text-sm text-muted-foreground">{moves.length} of 5 moves used</p>
+        )}
 
         {!isLoading && moves.length === 0 && (
           <div className="mt-10 rounded-2xl border bg-card p-8 text-center shadow-soft">

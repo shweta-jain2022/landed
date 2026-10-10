@@ -27,6 +27,17 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [guestError, setGuestError] = useState(false);
+
+  async function land() {
+    // Zero saved moves → setup; one or more → My moves; count failure → My moves.
+    const { data: moves, error: countError } = await supabase
+      .from("moves")
+      .select("id")
+      .limit(1);
+    navigate({ to: countError ? "/moves" : (moves?.length ?? 0) === 0 ? "/setup" : "/moves" });
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -40,12 +51,24 @@ function AuthPage() {
       setError(error.message);
       return;
     }
-    // Zero saved moves → setup; one or more → My moves; count failure → My moves.
-    const { data: moves, error: countError } = await supabase
-      .from("moves")
-      .select("id")
-      .limit(1);
-    navigate({ to: countError ? "/moves" : (moves?.length ?? 0) === 0 ? "/setup" : "/moves" });
+    await land();
+  }
+
+  // Reuses an existing guest session in this browser; otherwise signs in anonymously.
+  async function continueAsGuest() {
+    setLoading(true);
+    setGuestError(false);
+    const { data } = await supabase.auth.getSession();
+    if (!data.session?.user.is_anonymous) {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        setLoading(false);
+        setGuestError(true);
+        return;
+      }
+    }
+    setLoading(false);
+    await land();
   }
 
   return (
@@ -69,6 +92,16 @@ function AuthPage() {
             {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
           </Button>
         </form>
+        <Button type="button" variant="outline" disabled={loading} onClick={continueAsGuest} className="mt-4 h-11 w-full rounded-xl">
+          Continue as guest
+        </Button>
+        <p className="mt-2 text-center text-xs text-muted-foreground">No account needed. Your data stays in this browser.</p>
+        {guestError && (
+          <div className="mt-3 flex items-center justify-center gap-3 text-sm text-destructive">
+            <span>Couldn't start a guest session.</span>
+            <Button type="button" size="sm" variant="outline" onClick={continueAsGuest}>Retry</Button>
+          </div>
+        )}
         <button
           type="button"
           onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setError(null); }}
